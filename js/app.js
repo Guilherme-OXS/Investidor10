@@ -1,9 +1,11 @@
 // ==========================================================================
-// INVESTIDOR 10X - APLICAÇÃO WEB PWA & CONTROLADOR DE INTERFACE (PARTE 2)
+// INVESTIDOR 10X - APLICAÇÃO WEB PWA & CONTROLADOR DE INTERFACE (PARTE 3)
+// Dados ao vivo (AwesomeAPI + Brapi), Central de Notícias e Screener Inteligente
 // ==========================================================================
 
 let deferredPrompt = null;
 let currentFilter = 'all';
+let currentPreset = null;
 let searchQuery = '';
 let selectedCompareTickers = ['ITUB4', 'BBAS3']; // Comparação inicial padrão
 let USER_PORTFOLIO = JSON.parse(localStorage.getItem('i10x_portfolio')) || INITIAL_USER_PORTFOLIO;
@@ -11,11 +13,15 @@ let USER_PORTFOLIO = JSON.parse(localStorage.getItem('i10x_portfolio')) || INITI
 document.addEventListener('DOMContentLoaded', () => {
   initServiceWorker();
   initTheme();
+  initMarketStatus();
   renderTickerRibbon();
   renderAssets();
   renderComparator();
   renderPortfolio();
+  renderNews();
   initSimulator();
+  initScreenerPresets();
+  initLiveSync();
   initEventListeners();
 });
 
@@ -69,7 +75,25 @@ function initTheme() {
   }
 }
 
-// 3. RENDERIZAÇÃO DA BARRA DE ÍNDICES AO VIVO (TICKER TAPE)
+// 3. STATUS DO PREGÃO B3 EM TEMPO REAL
+function initMarketStatus() {
+  if (!window.LiveMarketConnector) return;
+  const status = LiveMarketConnector.getMarketStatus();
+  const dot = document.getElementById('marketStatusDot');
+  const text = document.getElementById('marketStatusText');
+
+  if (dot && text) {
+    if (status.isOpen) {
+      dot.className = 'status-dot';
+      text.textContent = `B3 Aberta (${status.timeString})`;
+    } else {
+      dot.className = 'status-dot closed';
+      text.textContent = `B3 Fechada (${status.timeString})`;
+    }
+  }
+}
+
+// 4. RENDERIZAÇÃO DA BARRA DE ÍNDICES AO VIVO (TICKER TAPE)
 function renderTickerRibbon() {
   const ribbon = document.getElementById('tickerRibbon');
   if (!ribbon || !MARKET_INDICES) return;
@@ -89,7 +113,47 @@ function renderTickerRibbon() {
   }).join('');
 }
 
-// 4. RENDERIZAÇÃO DOS ATIVOS COM FILTRO INTELIGENTE
+// 5. SINCRONIZAÇÃO DE COTAÇÕES AO VIVO (AwesomeAPI + Brapi)
+function initLiveSync() {
+  const syncBtn = document.getElementById('syncQuotesBtn');
+  const syncIcon = document.getElementById('syncQuotesIcon');
+  const syncText = document.getElementById('syncQuotesText');
+
+  if (syncBtn && window.LiveMarketConnector) {
+    syncBtn.addEventListener('click', async () => {
+      if (syncIcon) syncIcon.classList.add('spinning');
+      if (syncText) syncText.textContent = 'Atualizando...';
+
+      await LiveMarketConnector.syncAll();
+      renderTickerRibbon();
+      renderAssets();
+      initMarketStatus();
+
+      if (syncIcon) syncIcon.classList.remove('spinning');
+      if (syncText) syncText.textContent = 'Atualizado!';
+      setTimeout(() => {
+        if (syncText) syncText.textContent = 'Ao Vivo';
+      }, 2500);
+    });
+
+    // Atualização em background ao carregar a página
+    setTimeout(() => {
+      LiveMarketConnector.syncAll().then(() => {
+        renderTickerRibbon();
+        renderAssets();
+        initMarketStatus();
+      });
+    }, 800);
+  }
+
+  // Ouvinte de evento customizado
+  window.addEventListener('marketQuotesUpdated', () => {
+    renderTickerRibbon();
+    renderAssets();
+  });
+}
+
+// 6. RENDERIZAÇÃO DOS ATIVOS COM FILTRO INTELIGENTE E PRESETS
 function renderAssets() {
   const grid = document.getElementById('assetsGrid');
   const countBadge = document.getElementById('assetCountBadge');
@@ -97,7 +161,7 @@ function renderAssets() {
 
   // Filtragem inteligente
   const filtered = ASSETS_DATA.filter(asset => {
-    // Filtro de texto da busca
+    // 1. Filtro de busca por texto
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const match = asset.ticker.toLowerCase().includes(q) || 
@@ -106,7 +170,30 @@ function renderAssets() {
       if (!match) return false;
     }
 
-    // Filtros por botões
+    // 2. Presets Avançados de Screener
+    if (currentPreset === 'magic') {
+      // Baixo P/L (< 10) e Alto ROE (> 18%)
+      const roeNum = asset.roe ? parseFloat(asset.roe.replace('%', '')) : 0;
+      return asset.pl_contabil && asset.pl_contabil <= 10.0 && roeNum >= 18.0;
+    }
+    if (currentPreset === 'cows') {
+      // Dividend Yield > 7% e Dívida equilibrada
+      const dyNum = parseFloat(asset.dy.replace('%', ''));
+      return dyNum >= 7.0 && (!asset.divida_liquida_ebitda || asset.divida_liquida_ebitda < 3.0);
+    }
+    if (currentPreset === 'cheap-fiis') {
+      // FIIs com P/VP < 1.00 e sem Yield Trap
+      return (asset.type === 'FII' || asset.type === 'FIAGRO') && asset.pvp < 1.00 && !asset.yield_trap_alert;
+    }
+    if (currentPreset === 'cash') {
+      // Mais caixa do que dívida
+      return asset.divida_liquida_ebitda !== undefined && asset.divida_liquida_ebitda <= 0;
+    }
+    if (currentPreset === 'utilities') {
+      return asset.isUtilitySector === true;
+    }
+
+    // 3. Filtros por Categoria Tradicional
     if (currentFilter === 'AÇÃO') return asset.type === 'AÇÃO';
     if (currentFilter === 'FII') return asset.type === 'FII';
     if (currentFilter === 'FIAGRO') return asset.type === 'FIAGRO';
@@ -272,7 +359,50 @@ function renderAssets() {
   }).join('');
 }
 
-// 5. MODAL DE RAIO-X COMPLETO DO ATIVO COM VALUATION DINÂMICO INTERATIVO
+// 7. PRESETS DE SCREENER INTELIGENTE
+function initScreenerPresets() {
+  const chips = document.querySelectorAll('.preset-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const preset = chip.getAttribute('data-preset');
+      if (currentPreset === preset) {
+        // Desativa se clicar novamente
+        chip.classList.remove('active');
+        currentPreset = null;
+      } else {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentPreset = preset;
+      }
+      renderAssets();
+    });
+  });
+}
+
+// 8. CENTRAL DE NOTÍCIAS & FATOS RELEVANTES
+function renderNews() {
+  const container = document.getElementById('newsGridContainer');
+  if (!container || !window.MARKET_NEWS) return;
+
+  container.innerHTML = MARKET_NEWS.map(news => `
+    <article class="news-card" onclick="openAssetModal('${news.ticker}')">
+      <div>
+        <div class="news-header-meta">
+          <span class="news-ticker-badge">${news.ticker}</span>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${news.category}</span>
+        </div>
+        <h3 class="news-title">${news.title}</h3>
+        <p class="news-summary">${news.summary}</p>
+      </div>
+      <div class="news-footer">
+        <span>${news.source}</span>
+        <span>${news.time}</span>
+      </div>
+    </article>
+  `).join('');
+}
+
+// 9. MODAL DE RAIO-X COMPLETO DO ATIVO COM VALUATION DINÂMICO INTERATIVO
 function openAssetModal(ticker) {
   const asset = ASSETS_DATA.find(a => a.ticker === ticker);
   if (!asset) return;
@@ -408,7 +538,6 @@ function openAssetModal(ticker) {
   document.body.style.overflow = 'hidden';
 }
 
-// Atualização dinâmica do slider de Bazin
 function updateBazinSlider(ticker, yieldVal) {
   const asset = ASSETS_DATA.find(a => a.ticker === ticker);
   if (!asset) return;
@@ -443,7 +572,7 @@ function closeAssetModal() {
   }
 }
 
-// 6. RENDERIZAÇÃO DO COMPARADOR LADO A LADO
+// 10. RENDERIZAÇÃO DO COMPARADOR LADO A LADO
 function renderComparator() {
   const container = document.getElementById('compareTableContainer');
   const tagsContainer = document.getElementById('compareSelectedTags');
@@ -526,7 +655,7 @@ function removeCompareTicker(ticker) {
   renderComparator();
 }
 
-// 7. RENDERIZAÇÃO DA MINHA CARTEIRA
+// 11. RENDERIZAÇÃO DA MINHA CARTEIRA
 function renderPortfolio() {
   const container = document.getElementById('portfolioContainer');
   if (!container || !USER_PORTFOLIO) return;
@@ -597,7 +726,7 @@ function renderPortfolio() {
   `;
 }
 
-// 8. SIMULADOR DE JUROS COMPOSTOS & PROVENTOS REINVESTIDOS
+// 12. SIMULADOR DE JUROS COMPOSTOS & PROVENTOS REINVESTIDOS
 function initSimulator() {
   const initialInput = document.getElementById('simInitial');
   const monthlyInput = document.getElementById('simMonthly');
@@ -633,20 +762,23 @@ function initSimulator() {
   calculate();
 }
 
-// 9. EVENT LISTENERS GERAIS
+// 13. EVENT LISTENERS GERAIS
 function initEventListeners() {
-  // Pílulas de filtro
+  // Pílulas de categorias
   const pills = document.querySelectorAll('.pill-item');
   pills.forEach(pill => {
     pill.addEventListener('click', () => {
       pills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       currentFilter = pill.getAttribute('data-filter');
+      // Limpa preset ao escolher categoria
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      currentPreset = null;
       renderAssets();
     });
   });
 
-  // Busca global
+  // Busca global com atalho '/'
   const searchInput = document.getElementById('globalSearchInput');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {

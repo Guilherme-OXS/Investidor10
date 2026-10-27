@@ -50,7 +50,7 @@
       <a class="nav-link" data-tab="acoes" href="#acoes">Ações</a>
       <a class="nav-link" data-tab="fiis" href="#fiis">FIIs</a>
       <a class="nav-link" data-tab="comparador" href="#compareSection">Comparador</a>
-      <a class="nav-link" data-tab="radar" href="#radar">Radar de Proventos</a>
+      <a class="nav-link" data-tab="noticias" href="#newsSection">Notícias & Fatos</a>
       <a class="nav-link" data-tab="carteira" href="#portfolioSection">Minha Carteira</a>
       <a class="nav-link" data-tab="simulador" href="#simulatorSection">Simulador</a>
     </nav>
@@ -65,8 +65,24 @@
       <span class="search-shortcut">/</span>
     </div>
 
-    <!-- Controles & Instalação PWA -->
+    <!-- Controles, Status B3 & Instalação PWA -->
     <div class="header-actions">
+      <!-- Indicador de Status do Pregão B3 -->
+      <div class="market-status-pill" id="marketStatusPill" title="Horário de negociação B3: 10h às 18h">
+        <span class="status-dot" id="marketStatusDot"></span>
+        <span id="marketStatusText">Mercado B3</span>
+      </div>
+
+      <!-- Botão de Sincronizar Cotações em Tempo Real -->
+      <button class="btn-sync-quotes" id="syncQuotesBtn" title="Atualizar cotações em tempo real">
+        <svg class="sync-icon" id="syncQuotesIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span id="syncQuotesText">Ao Vivo</span>
+      </button>
+
       <!-- Botão de Instalar PWA no Celular/PC -->
       <button class="btn-pwa-install" id="pwaInstallBtn" style="display: none;" title="Instalar como Aplicativo">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -97,7 +113,7 @@
   <!-- 3. CONTAINER PRINCIPAL -->
   <main class="main-container">
 
-    <!-- Filtros de Pílulas Rápidas -->
+    <!-- Filtros de Categorias Rápidas -->
     <div class="category-pills" id="categoryPills">
       <button class="pill-item active" data-filter="all">Todos os Ativos</button>
       <button class="pill-item" data-filter="AÇÃO">Ações B3</button>
@@ -107,6 +123,16 @@
       <button class="pill-item" data-filter="high-dy">Maiores Proventos (DY > 8%)</button>
       <button class="pill-item" data-filter="safe">Sem Armadilha de Yield</button>
       <button class="pill-item" data-filter="low-pl">Menor P/L</button>
+    </div>
+
+    <!-- Presets do Screener Inteligente -->
+    <div class="presets-scroll-bar" id="screenerPresets">
+      <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 4px;">Filtros Prontos:</span>
+      <button class="preset-chip" data-preset="magic">⚡ Fórmula Mágica (Baixo P/L + Alto ROE)</button>
+      <button class="preset-chip" data-preset="cows">🥛 Vacas Leiteiras (DY > 7%)</button>
+      <button class="preset-chip" data-preset="cheap-fiis">🏢 FIIs com Desconto (P/VP &lt; 1,00)</button>
+      <button class="preset-chip" data-preset="cash">💰 Caixa Líquido (Mais Caixa que Dívida)</button>
+      <button class="preset-chip" data-preset="utilities">⚡ Monopólios Defensivos (Elétricas)</button>
     </div>
 
     <!-- Título da Seção Dinâmica -->
@@ -238,6 +264,28 @@
       </div>
     </section>
 
+    <!-- Seção: Central de Notícias & Fatos Relevantes B3 (Parte 3) -->
+    <section id="newsSection" class="news-container">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-500)" stroke-width="2.5">
+              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path>
+              <line x1="9" y1="9" x2="13" y2="9"></line>
+              <line x1="9" y1="13" x2="15" y2="13"></line>
+              <line x1="9" y1="17" x2="11" y2="17"></line>
+            </svg>
+            Central de Fatos Relevantes & Notícias B3
+          </h2>
+          <p class="section-subtitle">Acompanhe anúncios de dividendos, balanços e decisões da CVM em tempo real sem ruídos.</p>
+        </div>
+      </div>
+
+      <div class="news-grid" id="newsGridContainer">
+        <!-- Notícias injetadas dinamicamente via liveData.js / app.js -->
+      </div>
+    </section>
+
   </main>
 
   <!-- 4. MODAL DE DETALHES DO ATIVO (RAIO-X COMPLETO / BOTTOM SHEET NO CELULAR) -->
@@ -294,18 +342,18 @@
       </svg>
       <span>Carteira</span>
     </a>
-    <a class="bottom-nav-item" data-tab="simulador" href="#simulatorSection">
+    <a class="bottom-nav-item" data-tab="noticias" href="#newsSection">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="1" x2="12" y2="23"></line>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path>
       </svg>
-      <span>Simular</span>
+      <span>Notícias</span>
     </a>
   </nav>
 
   <!-- Scripts -->
   <script src="/js/data.js"></script>
   <script src="/js/valuation.js"></script>
+  <script src="/js/liveData.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

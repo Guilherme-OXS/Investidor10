@@ -1,5 +1,5 @@
 // Investidor 10X - Service Worker de Alta Performance PWA
-const CACHE_NAME = 'investidor10x-v2.0.0';
+const CACHE_NAME = 'investidor10x-v3.0.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   '/css/style.css',
   '/js/data.js',
   '/js/valuation.js',
+  '/js/liveData.js',
   '/js/app.js',
   '/icons/favicon.svg',
   '/icons/icon-192.png',
