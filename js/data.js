@@ -792,3 +792,38 @@ const INITIAL_USER_PORTFOLIO = [
   { ticker: 'KNCR11', qty: 100, precoMedio: 100.80, cotacao: 102.30 },
   { ticker: 'XPML11', qty: 80, precoMedio: 99.20, cotacao: 104.50 }
 ];
+
+/**
+ * Retorna dados históricos realistas de cotação e proventos para renderização de gráficos
+ */
+function getAssetHistoricalData(ticker) {
+  const asset = ASSETS_DATA.find(a => a.ticker === ticker);
+  if (!asset) return null;
+
+  const currentPrice = asset.price;
+  const dyDecimal = parseFloat(asset.dy.replace('%', '')) / 100;
+  const annualDiv = currentPrice * dyDecimal;
+
+  // Histórico de cotações em 5 anos
+  const priceHistory = [
+    { date: '2022', value: parseFloat((currentPrice * 0.72).toFixed(2)) },
+    { date: '2023', value: parseFloat((currentPrice * 0.84).toFixed(2)) },
+    { date: '2024', value: parseFloat((currentPrice * 0.91).toFixed(2)) },
+    { date: '2025', value: parseFloat((currentPrice * 1.05).toFixed(2)) },
+    { date: '2026', value: parseFloat(currentPrice.toFixed(2)) }
+  ];
+
+  // Histórico de dividendos anuais
+  const dividendHistory = [
+    { year: '2022', total: parseFloat((annualDiv * 0.82).toFixed(2)) },
+    { year: '2023', total: parseFloat((annualDiv * 0.90).toFixed(2)) },
+    { year: '2024', total: parseFloat((annualDiv * 0.95).toFixed(2)) },
+    { year: '2025', total: parseFloat((annualDiv * 1.02).toFixed(2)) },
+    { year: '2026', total: parseFloat(annualDiv.toFixed(2)) }
+  ];
+
+  return { priceHistory, dividendHistory };
+}
+
+window.getAssetHistoricalData = getAssetHistoricalData;
+

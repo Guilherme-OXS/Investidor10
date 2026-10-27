@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#080a11">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Investidor 10X - Radar de Mercado & Screener B3</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Barra de Cotações -->
+  <div class="ticker-ribbon" id="tickerRibbon" aria-label="Cotações em tempo real"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <a class="brand-wrapper" href="/">
+      <div class="brand-logo">10</div>
+      <div class="brand-text">
+        <div class="brand-title">
+          Investidor 10<span class="badge-pro">PRO+</span>
+        </div>
+        <div class="brand-subtitle">Terminal de Inteligência B3</div>
+      </div>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Navegação Principal">
+      <a class="nav-link" href="/">Início</a>
+      <a class="nav-link active" href="/radar">Radar & Screener</a>
+      <a class="nav-link" href="/comparador">Comparador</a>
+      <a class="nav-link" href="/carteira">Minha Carteira</a>
+      <a class="nav-link" href="/simulador">Simulador</a>
+      <a class="nav-link" href="/noticias">Notícias & Fatos</a>
+    </nav>
+
+    <div class="search-bar-container">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" class="search-input" id="globalSearchInput" placeholder="Buscar ativo (ex: PETR4, HGLG11)..." autocomplete="off">
+      <span class="search-shortcut">/</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="market-status-pill" id="marketStatusPill" title="Horário de negociação B3: 10h às 18h">
+        <span class="status-dot" id="marketStatusDot"></span>
+        <span id="marketStatusText">Mercado B3</span>
+      </div>
+
+      <button class="btn-sync-quotes" id="syncQuotesBtn" title="Atualizar cotações em tempo real">
+        <svg class="sync-icon" id="syncQuotesIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span id="syncQuotesText">Ao Vivo</span>
+      </button>
+
+      <button class="btn-pwa-install" id="pwaInstallBtn" style="display: none;" title="Instalar como Aplicativo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Instalar App</span>
+      </button>
+
+      <button class="btn-icon" id="themeToggleBtn" title="Alternar Modo Escuro/Claro" aria-label="Alternar tema">
+        <svg id="themeIconDark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Container Principal: Radar & Screener -->
+  <main class="main-container">
+    <div style="margin-bottom: 24px;">
+      <h1 class="section-title">Radar de Ativos & Screener Fundamentalista</h1>
+      <p class="section-subtitle">Filtre ações, FIIs, Fiagros e BDRs por múltiplos depurados de distorções contábeis.</p>
+    </div>
+
+    <!-- Filtros de Categorias Rápidas -->
+    <div class="category-pills" id="categoryPills">
+      <button class="pill-item active" data-filter="all">Todos os Ativos</button>
+      <button class="pill-item" data-filter="AÇÃO">Ações B3</button>
+      <button class="pill-item" data-filter="FII">Fundos Imobiliários</button>
+      <button class="pill-item" data-filter="FIAGRO">Fiagros</button>
+      <button class="pill-item" data-filter="BDR">BDRs (EUA)</button>
+      <button class="pill-item" data-filter="high-dy">Maiores Proventos (DY > 8%)</button>
+      <button class="pill-item" data-filter="safe">Sem Armadilha de Yield</button>
+      <button class="pill-item" data-filter="low-pl">Menor P/L</button>
+    </div>
+
+    <!-- Presets do Screener Inteligente -->
+    <div class="presets-scroll-bar" id="screenerPresets">
+      <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 4px;">Estratégias:</span>
+      <button class="preset-chip" data-preset="magic">Fórmula Mágica (Baixo P/L + Alto ROE)</button>
+      <button class="preset-chip" data-preset="cows">Dividendos Seguros (DY > 7%)</button>
+      <button class="preset-chip" data-preset="cheap-fiis">FIIs com Desconto (P/VP &lt; 1,00)</button>
+      <button class="preset-chip" data-preset="cash">Caixa Líquido (Sem Dívida)</button>
+      <button class="preset-chip" data-preset="utilities">Monopólios Defensivos</button>
+    </div>
+
+    <!-- Barra de Controle: Contagem e Alternador de Modo (Cards vs Tabela) -->
+    <div class="section-title-bar" style="margin-top: 12px;">
+      <div class="asset-count-badge font-mono" id="assetCountBadge" style="color: var(--text-muted); font-size: 13px;">
+        Mostrando ativos
+      </div>
+
+      <div class="view-mode-bar">
+        <button class="btn-view-toggle active" id="btnViewCards" title="Modo Cartões">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Cards</span>
+        </button>
+        <button class="btn-view-toggle" id="btnViewTable" title="Modo Tabela Analítica">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span>Tabela Analítica</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid de Ativos (Cards) -->
+    <div class="assets-grid" id="assetsGrid"></div>
+
+    <!-- Tabela Analítica Densa (Modo Terminal) -->
+    <div class="analytical-table-wrapper" id="assetsTableContainer" style="display: none;">
+      <table class="analytical-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Ativo</th>
+            <th>Segmento</th>
+            <th style="text-align: right;">Cotação</th>
+            <th style="text-align: right;">Dia (%)</th>
+            <th style="text-align: right;">DY (12M)</th>
+            <th style="text-align: right;">P/L</th>
+            <th style="text-align: right;">P/VP</th>
+            <th style="text-align: right;">ROE</th>
+            <th style="text-align: right;">Teto Bazin</th>
+            <th style="text-align: center;">Score</th>
+          </tr>
+        </thead>
+        <tbody id="assetsTableBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal de Raio-X -->
+  <div class="modal-overlay" id="assetModal" aria-hidden="true" role="dialog">
+    <div class="modal-sheet" id="modalSheet">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="ticker-icon" id="modalTickerIcon">--</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 id="modalTickerTitle" style="font-size: 20px; font-weight: 800; letter-spacing: -0.01em;">TICKER</h2>
+              <span id="modalTypeBadge" class="asset-type-badge">TIPO</span>
+            </div>
+            <div id="modalCompanyName" style="font-size: 13px; color: var(--text-muted);">Empresa</div>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="modalCloseBtn" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav Mobile -->
+  <nav class="mobile-bottom-nav" aria-label="Navegação Móvel">
+    <a class="bottom-nav-item" href="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Início</span>
+    </a>
+    <a class="bottom-nav-item active" href="/radar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+      <span>Radar</span>
+    </a>
+    <a class="bottom-nav-item" href="/comparador">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
+      <span>Comparar</span>
+    </a>
+    <a class="bottom-nav-item" href="/carteira">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+      <span>Carteira</span>
+    </a>
+    <a class="bottom-nav-item" href="/noticias">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path></svg>
+      <span>Notícias</span>
+    </a>
+  </nav>
+
+  <script src="/js/data.js"></script>
+  <script src="/js/valuation.js"></script>
+  <script src="/js/charts.js"></script>
+  <script src="/js/liveData.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

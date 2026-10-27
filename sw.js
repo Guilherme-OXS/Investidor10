@@ -1,12 +1,23 @@
-// Investidor 10X - Service Worker de Alta Performance PWA
-const CACHE_NAME = 'investidor10x-v3.0.0';
+// Investidor 10X - Service Worker de Alta Performance PWA (Parte 4 - Multi-Páginas)
+const CACHE_NAME = 'investidor10x-v4.0.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/radar',
+  '/radar.html',
+  '/comparador',
+  '/comparador.html',
+  '/carteira',
+  '/carteira.html',
+  '/simulador',
+  '/simulador.html',
+  '/noticias',
+  '/noticias.html',
   '/manifest.json',
   '/css/style.css',
   '/js/data.js',
   '/js/valuation.js',
+  '/js/charts.js',
   '/js/liveData.js',
   '/js/app.js',
   '/icons/favicon.svg',
@@ -41,7 +52,6 @@ self.addEventListener('activate', (event) => {
 
 // Interceptação de requisições: Stale-While-Revalidate para máxima velocidade
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições não-GET ou extensões do navegador
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
     return;
   }

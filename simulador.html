@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#080a11">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Investidor 10X - Simulador de Juros Compostos & Aposentadoria B3</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="ticker-ribbon" id="tickerRibbon" aria-label="Cotações em tempo real"></div>
+
+  <header class="app-header">
+    <a class="brand-wrapper" href="/">
+      <div class="brand-logo">10</div>
+      <div class="brand-text">
+        <div class="brand-title">
+          Investidor 10<span class="badge-pro">PRO+</span>
+        </div>
+        <div class="brand-subtitle">Terminal de Inteligência B3</div>
+      </div>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Navegação Principal">
+      <a class="nav-link" href="/">Início</a>
+      <a class="nav-link" href="/radar">Radar & Screener</a>
+      <a class="nav-link" href="/comparador">Comparador</a>
+      <a class="nav-link" href="/carteira">Minha Carteira</a>
+      <a class="nav-link active" href="/simulador">Simulador</a>
+      <a class="nav-link" href="/noticias">Notícias & Fatos</a>
+    </nav>
+
+    <div class="search-bar-container">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" class="search-input" id="globalSearchInput" placeholder="Buscar ativo (ex: PETR4, HGLG11)..." autocomplete="off">
+      <span class="search-shortcut">/</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="market-status-pill" id="marketStatusPill" title="Horário de negociação B3: 10h às 18h">
+        <span class="status-dot" id="marketStatusDot"></span>
+        <span id="marketStatusText">Mercado B3</span>
+      </div>
+
+      <button class="btn-sync-quotes" id="syncQuotesBtn" title="Atualizar cotações em tempo real">
+        <svg class="sync-icon" id="syncQuotesIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        <span id="syncQuotesText">Ao Vivo</span>
+      </button>
+
+      <button class="btn-pwa-install" id="pwaInstallBtn" style="display: none;" title="Instalar como Aplicativo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Instalar App</span>
+      </button>
+
+      <button class="btn-icon" id="themeToggleBtn" title="Alternar Modo Escuro/Claro" aria-label="Alternar tema">
+        <svg id="themeIconDark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div style="margin-bottom: 24px;">
+      <h1 class="section-title">Simulador de Juros Compostos & Renda Passiva</h1>
+      <p class="section-subtitle">Calcule o poder do reinvestimento de dividendos e descubra quando você atingirá sua liberdade financeira.</p>
+    </div>
+
+    <div class="dashboard-grid-2col" style="display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; margin-bottom: 40px;">
+      <!-- FORMULÁRIO DE ENTRADAS -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px;">
+        <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">Parâmetros da Simulação</h2>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Aporte Inicial (R$)</label>
+          <input type="number" id="simInitial" value="10000" min="0" step="500" style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; font-family: monospace; font-weight: 700;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Aporte Mensal (R$)</label>
+          <input type="number" id="simMonthly" value="1500" min="0" step="100" style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; font-family: monospace; font-weight: 700;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Taxa de Retorno Anual (% a.a.)</label>
+            <span id="simRateDisplay" style="font-size: 12px; font-weight: 700; color: var(--emerald-400); font-family: monospace;">12.0%</span>
+          </div>
+          <input type="number" id="simRate" value="12" min="1" max="50" step="0.5" style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; font-family: monospace; font-weight: 700;">
+          
+          <!-- PRESETS DE TAXA -->
+          <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+            <button type="button" class="preset-chip" onclick="document.getElementById('simRate').value = 10.75; document.getElementById('simRate').dispatchEvent(new Event('input'));">10.75% Selic</button>
+            <button type="button" class="preset-chip" onclick="document.getElementById('simRate').value = 11.5; document.getElementById('simRate').dispatchEvent(new Event('input'));">11.5% FIIs</button>
+            <button type="button" class="preset-chip" onclick="document.getElementById('simRate').value = 13.0; document.getElementById('simRate').dispatchEvent(new Event('input'));">13% Ações B3</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Prazo em Anos</label>
+            <span id="simYearsDisplay" style="font-size: 12px; font-weight: 700; color: var(--sky-400); font-family: monospace;">15 anos</span>
+          </div>
+          <input type="range" id="simYears" min="1" max="35" value="15" step="1" style="width: 100%; accent-color: var(--emerald-500); cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            <span>1 ano</span>
+            <span>15 anos</span>
+            <span>35 anos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTADOS & GRÁFICO DA CURVA EXPONENCIAL -->
+      <div>
+        <!-- CARDS DE RESULTADO -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Patrimônio Final Acumulado</div>
+            <div id="simResultTotal" style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--emerald-400); margin-top: 6px;">R$ 0,00</div>
+          </div>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Investido (Do Bolso)</div>
+            <div id="simResultInvested" style="font-size: 20px; font-weight: 800; font-family: monospace; color: var(--text-secondary); margin-top: 6px;">R$ 0,00</div>
+          </div>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total em Juros e Proventos</div>
+            <div id="simResultInterest" style="font-size: 20px; font-weight: 800; font-family: monospace; color: var(--sky-400); margin-top: 6px;">R$ 0,00</div>
+          </div>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Renda Passiva Mensal Estimada</div>
+            <div id="simResultIncome" style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--emerald-300); margin-top: 6px;">R$ 0,00/mês</div>
+          </div>
+        </div>
+
+        <!-- GRÁFICO INTERATIVO DE CURVA DE CRESCIMENTO -->
+        <div class="chart-box-container" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div>
+              <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0;">Evolução Patrimonial ao Longo do Tempo</h3>
+              <div style="font-size: 12px; color: var(--text-muted);">Curva de juros compostos com aportes constantes</div>
+            </div>
+          </div>
+          <div id="simChartContainer" style="min-height: 240px;">
+            <!-- Curva SVG gerada via FinancialCharts -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="mobile-bottom-nav" aria-label="Navegação Móvel">
+    <a class="bottom-nav-item" href="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Início</span>
+    </a>
+    <a class="bottom-nav-item" href="/radar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+      <span>Radar</span>
+    </a>
+    <a class="bottom-nav-item" href="/comparador">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
+      <span>Comparar</span>
+    </a>
+    <a class="bottom-nav-item" href="/carteira">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+      <span>Carteira</span>
+    </a>
+    <a class="bottom-nav-item" href="/noticias">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path></svg>
+      <span>Notícias</span>
+    </a>
+  </nav>
+
+  <script src="/js/data.js"></script>
+  <script src="/js/valuation.js"></script>
+  <script src="/js/charts.js"></script>
+  <script src="/js/liveData.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
