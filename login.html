@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080a11">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>InvestLucro - Acesso Exclusivo & Convidados</title>
+  <title>InvestLucro - Acesso Restrito</title>
   
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
@@ -23,11 +23,11 @@
     
     <!-- BRAND LOGO -->
     <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
-      <div class="brand-logo" style="width: 44px; height: 44px; font-size: 18px; margin-bottom: 12px;">IL</div>
+      <div class="brand-logo" style="width: 48px; height: 48px; font-size: 20px; margin-bottom: 12px;">IL</div>
       <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">
         InvestLucro<span class="badge-pro" style="margin-left: 6px; font-size: 10px; vertical-align: middle;">PRO</span>
       </h1>
-      <p style="font-size: 12.5px; color: var(--text-muted);">Acesso Restrito: Guilherme Otávio & Convidados</p>
+      <p style="font-size: 12.5px; color: var(--text-muted);">Terminal Privado: Administrador & Convidados</p>
     </div>
 
     <!-- ABAS ENTRAR / CONVITE -->
@@ -39,53 +39,53 @@
     <!-- FORMULÁRIO 1: LOGIN -->
     <form id="loginForm">
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Usuário ou E-mail</label>
-        <input type="text" id="loginUsername" placeholder="ex: guilherme" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Usuário de Acesso</label>
+        <input type="text" id="loginUsername" placeholder="Digite seu usuário" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
 
-      <div style="margin-bottom: 20px;">
+      <div style="margin-bottom: 12px;">
         <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Senha de Acesso</label>
         <input type="password" id="loginPassword" placeholder="••••••••" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
 
-      <button type="submit" style="width: 100%; padding: 12px; background: var(--emerald-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
-        Acessar Minha Carteira
+      <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">
+        No primeiro acesso como <strong>Guilherme.Otavio</strong>, a senha digitada será registrada como sua senha definitiva no banco de dados em nuvem.
+      </p>
+
+      <button type="submit" id="btnSubmitLogin" style="width: 100%; padding: 12px; background: var(--emerald-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
+        Acessar Carteira Privada
       </button>
     </form>
 
     <!-- FORMULÁRIO 2: CADASTRO COM CÓDIGO DE CONVITE -->
     <form id="registerForm" style="display: none;">
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Código de Convite Autorizado</label>
-        <input type="text" id="regInviteCode" placeholder="ex: INVEST-VIP" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--emerald-500); border-radius: var(--radius-md); color: var(--emerald-400); font-size: 14px; font-weight: 700; font-family: monospace; text-transform: uppercase;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Código de Convite VIP</label>
+        <input type="text" id="regInviteCode" placeholder="Insira o código VIP" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--emerald-500); border-radius: var(--radius-md); color: var(--emerald-400); font-size: 14px; font-weight: 700; font-family: monospace; text-transform: uppercase;">
       </div>
 
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Seu Nome Completo</label>
-        <input type="text" id="regName" placeholder="ex: Carlos Silva" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Nome Completo</label>
+        <input type="text" id="regName" placeholder="Seu nome" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
 
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Nome de Usuário (Login)</label>
-        <input type="text" id="regUsername" placeholder="ex: carlos" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Crie seu Nome de Usuário</label>
+        <input type="text" id="regUsername" placeholder="Nome de usuário para login" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
 
       <div style="margin-bottom: 20px;">
-        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Crie uma Senha</label>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Crie uma Senha Forte</label>
         <input type="password" id="regPassword" placeholder="••••••••" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
 
-      <button type="submit" style="width: 100%; padding: 12px; background: var(--blue-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
+      <button type="submit" id="btnSubmitRegister" style="width: 100%; padding: 12px; background: var(--blue-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
         Validar Convite & Criar Conta
       </button>
     </form>
 
     <!-- MENSAGEM DE STATUS / ERRO -->
-    <div id="authAlert" style="display: none; margin-top: 16px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12.5px; text-align: center;"></div>
-
-    <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
-      <a href="/" style="font-size: 12px; color: var(--text-muted); text-decoration: none;">&larr; Voltar para a Visão Geral Pública</a>
-    </div>
+    <div id="authAlert" style="display: none; margin-top: 16px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; text-align: center; font-weight: 600;"></div>
   </div>
 
   <script src="/js/auth.js"></script>
@@ -95,6 +95,8 @@
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const alertBox = document.getElementById('authAlert');
+    const btnLogin = document.getElementById('btnSubmitLogin');
+    const btnRegister = document.getElementById('btnSubmitRegister');
 
     tabLogin.addEventListener('click', () => {
       tabLogin.style.background = 'var(--text-primary)';
@@ -116,19 +118,31 @@
       alertBox.style.display = 'none';
     });
 
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const u = document.getElementById('loginUsername').value;
+      const u = document.getElementById('loginUsername').value.trim();
       const p = document.getElementById('loginPassword').value;
 
-      const res = InvestAuth.login(u, p);
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'Verificando credenciais...';
+
+      const res = await InvestAuth.login(u, p);
+      btnLogin.disabled = false;
+      btnLogin.textContent = 'Acessar Carteira Privada';
+
       if (res.success) {
         alertBox.style.display = 'block';
         alertBox.style.background = 'var(--emerald-glow)';
         alertBox.style.color = 'var(--emerald-400)';
         alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-        alertBox.textContent = `Bem-vindo de volta, ${res.user.name}! Redirecionando...`;
-        setTimeout(() => window.location.href = '/carteira', 800);
+        
+        if (res.isFirstAccess) {
+          alertBox.textContent = `Primeiro acesso confirmado! Senha cadastrada com sucesso para ${res.user.name}. Redirecionando...`;
+        } else {
+          alertBox.textContent = `Bem-vindo de volta, ${res.user.name}! Redirecionando...`;
+        }
+        
+        setTimeout(() => window.location.href = '/', 600);
       } else {
         alertBox.style.display = 'block';
         alertBox.style.background = 'var(--rose-glow)';
@@ -138,21 +152,27 @@
       }
     });
 
-    registerForm.addEventListener('submit', (e) => {
+    registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const code = document.getElementById('regInviteCode').value;
-      const name = document.getElementById('regName').value;
-      const u = document.getElementById('regUsername').value;
+      const code = document.getElementById('regInviteCode').value.trim();
+      const name = document.getElementById('regName').value.trim();
+      const u = document.getElementById('regUsername').value.trim();
       const p = document.getElementById('regPassword').value;
 
-      const res = InvestAuth.registerGuest(name, u, p, code);
+      btnRegister.disabled = true;
+      btnRegister.textContent = 'Validando convite...';
+
+      const res = await InvestAuth.registerGuest(name, u, p, code);
+      btnRegister.disabled = false;
+      btnRegister.textContent = 'Validar Convite & Criar Conta';
+
       if (res.success) {
         alertBox.style.display = 'block';
         alertBox.style.background = 'var(--emerald-glow)';
         alertBox.style.color = 'var(--emerald-400)';
         alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
         alertBox.textContent = `Conta criada com sucesso para ${res.user.name}! Redirecionando...`;
-        setTimeout(() => window.location.href = '/carteira', 800);
+        setTimeout(() => window.location.href = '/', 600);
       } else {
         alertBox.style.display = 'block';
         alertBox.style.background = 'var(--rose-glow)';

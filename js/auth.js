@@ -71,54 +71,29 @@ const InvestAuth = {
   },
 
   async login(usernameOrEmail, password) {
-    const u = usernameOrEmail.trim().toLowerCase();
+    const rawUser = usernameOrEmail.trim();
 
-    // 1. Tenta autenticar na API Serverless segura da Vercel
+    // 1. Tenta autenticar na API Serverless segura da Vercel (Upstash Cloud)
     try {
       const response = await fetch('/api/auth?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password })
+        body: JSON.stringify({ username: rawUser, password })
       });
       const data = await response.json();
       if (data && data.success) {
         localStorage.setItem('investlucro_session', JSON.stringify(data.user));
         // Sincroniza carteira da nuvem logo após login
         await this.syncPortfolioFromCloud(data.user.username);
-        return { success: true, user: data.user };
+        return { success: true, isFirstAccess: data.isFirstAccess, user: data.user };
+      } else if (data && !data.success) {
+        return { success: false, message: data.message };
       }
     } catch (apiErr) {
-      console.warn('API Serverless offline ou em teste local, usando autenticação segura cliente:', apiErr);
+      console.warn('API Serverless offline ou em teste local:', apiErr);
     }
 
-    // 2. Fallback de contingência local para o Administrador Master
-    if (
-      (u === 'guilherme' || u === 'admin' || u === 'guilhermeotavioxxsouza@gmail.com') &&
-      (password === 'invest2026' || password === 'admin' || password === 'guilherme')
-    ) {
-      const userSession = AUTH_CONFIG.MASTER_USER;
-      localStorage.setItem('investlucro_session', JSON.stringify(userSession));
-      return { success: true, user: userSession };
-    }
-
-    const users = this.getStoredUsers();
-    const found = users.find(user => 
-      (user.username.toLowerCase() === u || (user.email && user.email.toLowerCase() === u)) &&
-      (user.passHash === password)
-    );
-
-    if (found) {
-      const userSession = {
-        username: found.username,
-        name: found.name,
-        role: found.role || 'CONVIDADO',
-        email: found.email || ''
-      };
-      localStorage.setItem('investlucro_session', JSON.stringify(userSession));
-      return { success: true, user: userSession };
-    }
-
-    return { success: false, message: 'Usuário ou senha incorretos. Acesso restrito a convidados.' };
+    return { success: false, message: 'Não foi possível autenticar. Verifique sua conexão e credenciais.' };
   },
 
   logout() {
@@ -153,46 +128,28 @@ const InvestAuth = {
     }
   },
 
-  registerGuest(name, username, password, inviteCode) {
-    const validCodes = this.getInviteCodes();
+  async registerGuest(name, username, password, inviteCode) {
     const code = (inviteCode || '').trim().toUpperCase();
 
-    if (!validCodes.includes(code)) {
-      return { success: false, message: 'Código de convite inválido! Apenas pessoas autorizadas por Guilherme podem criar conta.' };
+    // Envia para a API Serverless na nuvem
+    try {
+      const response = await fetch('/api/auth?action=register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, username, password, inviteCode: code })
+      });
+      const data = await response.json();
+      if (data && data.success) {
+        localStorage.setItem('investlucro_session', JSON.stringify(data.user));
+        return { success: true, user: data.user };
+      } else if (data && !data.success) {
+        return { success: false, message: data.message };
+      }
+    } catch (err) {
+      console.warn('Falha ao registrar via API na nuvem:', err);
     }
 
-    const users = this.getStoredUsers();
-    const uname = username.trim().toLowerCase();
-
-    if (users.some(u => u.username.toLowerCase() === uname)) {
-      return { success: false, message: 'Este nome de usuário já está em uso.' };
-    }
-
-    const newUser = {
-      username: uname,
-      name: name.trim(),
-      role: 'CONVIDADO',
-      passHash: password,
-      inviteUsed: code,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem('investlucro_users', JSON.stringify(users));
-
-    // Inicializa carteira vazia para o novo convidado
-    localStorage.setItem(`investlucro_portfolio_${uname}`, JSON.stringify([]));
-
-    // Cria a sessão automaticamente
-    const session = { username: newUser.username, name: newUser.name, role: 'CONVIDADO' };
-    localStorage.setItem('investlucro_session', JSON.stringify(session));
-
-    return { success: true, user: session };
-  },
-
-  logout() {
-    localStorage.removeItem('investlucro_session');
-    window.location.href = '/login';
+    return { success: false, message: 'Código de convite VIP inválido ou erro de conexão.' };
   },
 
   // Gerenciamento da Carteira do Usuário Logado
@@ -200,15 +157,16 @@ const InvestAuth = {
     const currentUser = this.getCurrentUser();
     if (!currentUser) return [];
 
-    const storageKey = `investlucro_portfolio_${currentUser.username.toLowerCase()}`;
+    const u = currentUser.username.toLowerCase();
+    const storageKey = `investlucro_portfolio_${u}`;
     const stored = localStorage.getItem(storageKey);
 
     if (stored) {
       return JSON.parse(stored);
     }
 
-    // Se for o Guilherme, inicia com a carteira real do extrato
-    if (currentUser.username.toLowerCase() === 'guilherme') {
+    // Se for o Guilherme (Guilherme.Otavio), inicia com a carteira real do extrato
+    if (u === 'guilherme.otavio' || u === 'guilherme') {
       localStorage.setItem(storageKey, JSON.stringify(GUILHERME_INITIAL_PORTFOLIO));
       return GUILHERME_INITIAL_PORTFOLIO;
     }
