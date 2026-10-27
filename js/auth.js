@@ -226,6 +226,33 @@ const InvestAuth = {
     localStorage.setItem(storageKey, JSON.stringify(portfolio));
     // Sincroniza imediatamente com a nuvem na Vercel (celular <-> computador)
     this.syncPortfolioToCloud(currentUser.username, portfolio);
+  },
+
+  async syncPortfolioToCloud(username, portfolio) {
+    try {
+      await fetch('/api/portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, portfolio })
+      });
+    } catch (e) {
+      console.warn('Sincronização em nuvem offline:', e);
+    }
+  },
+
+  async syncPortfolioFromCloud(username) {
+    try {
+      const res = await fetch(`/api/portfolio?username=${encodeURIComponent(username)}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.portfolio)) {
+        const storageKey = `investlucro_portfolio_${username.toLowerCase()}`;
+        localStorage.setItem(storageKey, JSON.stringify(data.portfolio));
+        return data.portfolio;
+      }
+    } catch (e) {
+      console.warn('Erro ao sincronizar da nuvem:', e);
+    }
+    return null;
   }
 };
 

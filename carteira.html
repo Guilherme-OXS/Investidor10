@@ -98,56 +98,112 @@
       </div>
     </div>
 
-    <!-- Abas Internas da Carteira -->
-    <div style="display: flex; gap: 24px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 20px; overflow-x: auto;">
-      <button class="portfolio-tab-btn active" style="padding-bottom: 10px; font-size: 14px; font-weight: 700; color: var(--emerald-400); border-bottom: 2px solid var(--emerald-400); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-        <span>Resumo</span>
-      </button>
-      <button class="portfolio-tab-btn" style="padding-bottom: 10px; font-size: 14px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        <span>Proventos</span>
-      </button>
-      <button class="portfolio-tab-btn" style="padding-bottom: 10px; font-size: 14px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-        <span>Rentabilidade</span>
-      </button>
+    <!-- Abas Internas da Carteira (Estilo Investidor 10) -->
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); margin-bottom: 22px; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; gap: 20px; overflow-x: auto;">
+        <button class="portfolio-tab-btn active" style="padding-bottom: 10px; font-size: 13.5px; font-weight: 700; color: var(--text-primary); border-bottom: 2px solid var(--text-primary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Resumo</span>
+        </button>
+        <button class="portfolio-tab-btn" style="padding-bottom: 10px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Posições</span>
+        </button>
+        <button class="portfolio-tab-btn" style="padding-bottom: 10px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          <span>Proventos</span>
+        </button>
+        <button class="portfolio-tab-btn" style="padding-bottom: 10px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path></svg>
+          <span>Patrimônio</span>
+        </button>
+        <button class="portfolio-tab-btn" style="padding-bottom: 10px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span>Rentabilidade</span>
+        </button>
+        <button class="portfolio-tab-btn" id="btnSubTabLancamentos" style="padding-bottom: 10px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+          <span>Lançamentos</span>
+        </button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 8px;">
+        <button id="btnHeaderAddLaunch" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; border: none; box-shadow: 0 1px 3px rgba(16,185,129,0.3);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>+ Adicionar Lançamento</span>
+        </button>
+      </div>
     </div>
 
-    <!-- CARROSEL DE DESTAQUE ESCURO (IDÊNTICO AOS PRINTS DO GUILHERME) -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- 1. CARDS DE DESTAQUE SUPERIORES (4 CARDS IDÊNTICO AO INVESTIDOR 10) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 24px;">
       
-      <!-- CARD 1: PATRIMÔNIO TOTAL & INVESTIDO -->
-      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px 22px; position: relative; box-shadow: var(--shadow-card);">
-        <div style="display: flex; align-items: flex-start; gap: 16px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>
+      <!-- CARD 1: PATRIMÔNIO TOTAL -->
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-card);">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>
           </div>
           <div style="flex: 1;">
-            <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Patrimônio total</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Patrimônio total</div>
             <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-              <div id="cardPatrimonioTotal" style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--text-primary);">R$ 0,00</div>
-              <span id="cardRentabilidadeBadge" style="background: rgba(16, 185, 129, 0.12); color: var(--emerald-400); font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-family: monospace;">0,00%</span>
+              <div id="cardPatrimonioTotal" style="font-size: 20px; font-weight: 800; font-family: monospace; color: var(--text-primary);">R$ 0,00</div>
+              <span id="cardRentabilidadeBadge" style="background: rgba(16, 185, 129, 0.12); color: var(--emerald-400); font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-family: monospace;">0,00%</span>
             </div>
-            <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+            <div style="margin-top: 8px; font-size: 11.5px; color: var(--text-muted);">
               Valor investido: <strong id="cardValorInvestido" style="color: var(--text-secondary); font-family: monospace;">R$ 0,00</strong>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- CARD 2: LUCRO TOTAL & GANHO DE CAPITAL -->
-      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px 22px; position: relative; box-shadow: var(--shadow-card);">
-        <div style="display: flex; align-items: flex-start; gap: 16px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+      <!-- CARD 2: LUCRO TOTAL -->
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-card);">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
           </div>
           <div style="flex: 1;">
-            <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Lucro total</div>
-            <div id="cardLucroTotal" style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--emerald-400); margin-top: 2px;">R$ 0,00</div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11.5px; color: var(--text-muted);">
+            <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Lucro total</div>
+            <div id="cardLucroTotal" style="font-size: 20px; font-weight: 800; font-family: monospace; color: var(--emerald-400); margin-top: 2px;">R$ 0,00</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-muted); gap: 6px;">
               <span>Ganho de Capital: <strong id="cardGanhoCapital" style="color: var(--text-primary); font-family: monospace;">R$ 0,00</strong></span>
-              <span>Proventos: <strong id="cardProventos" style="color: var(--text-primary); font-family: monospace;">R$ 0,00</strong></span>
+              <span>Dividendos: <strong id="cardProventos" style="color: var(--text-primary); font-family: monospace;">R$ 0,00</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: PROVENTOS RECEBIDOS (12M) -->
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-card);">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Proventos Recebidos (12M)</div>
+            <div id="cardProventos12M" style="font-size: 20px; font-weight: 800; font-family: monospace; color: var(--text-primary); margin-top: 2px;">R$ 0,00</div>
+            <div style="margin-top: 8px; font-size: 11.5px; color: var(--text-muted);">
+              Total: <strong id="cardProventosTotal" style="color: var(--text-secondary); font-family: monospace;">R$ 0,00</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: RENTABILIDADE (12M & TOTAL) -->
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-card);">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(234, 179, 8, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Rentabilidade (12M)</span>
+              <span id="badgeRentabilidade12M" style="background: rgba(234, 179, 8, 0.15); color: #eab308; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; font-family: monospace;">0,00% &rarr;</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Rentabilidade Total</span>
+              <span id="badgeRentabilidadeTotal" style="background: rgba(234, 179, 8, 0.15); color: #eab308; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; font-family: monospace;">0,00% &rarr;</span>
             </div>
           </div>
         </div>
@@ -155,101 +211,242 @@
 
     </div>
 
-    <!-- SEÇÃO: EVOLUÇÃO DO PATRIMÔNIO (O GRÁFICO PREFERIDO DO GUILHERME) -->
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 24px; box-shadow: var(--shadow-card);">
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-        <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Evolução do Patrimônio</h2>
-
-        <div style="display: flex; gap: 8px;">
-          <select style="padding: 6px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 12px; font-weight: 600;">
-            <option>12 meses</option>
-            <option>6 meses</option>
-            <option>Desde o início</option>
-          </select>
-          <select style="padding: 6px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 12px; font-weight: 600;">
-            <option>Todos os tipos</option>
-            <option>FIIs</option>
-            <option>Renda Fixa</option>
-          </select>
+    <!-- 2. SEÇÃO MÉDIA: GRID DE 2 COLUNAS NO PC (EVOLUÇÃO DO PATRIMÔNIO & ATIVOS NA CARTEIRA) -->
+    <div class="wallet-middle-grid" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 28px;">
+      
+      <!-- COLUNA 1: EVOLUÇÃO DO PATRIMÔNIO (IDÊNTICO AO INVESTIDOR 10) -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-card); display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+          <h2 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0;">Evolução do Patrimônio</h2>
+          <div style="display: flex; gap: 8px;">
+            <select id="filterEvolutionPeriod" style="padding: 5px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 11.5px; font-weight: 600;">
+              <option value="12M">Últimos 12 Meses</option>
+              <option value="6M">Últimos 6 Meses</option>
+              <option value="ALL">Desde o início</option>
+            </select>
+            <select id="filterEvolutionType" style="padding: 5px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 11.5px; font-weight: 600;">
+              <option value="ALL">Todos os tipos</option>
+              <option value="FII">FIIs</option>
+              <option value="RENDA_FIXA">Renda Fixa</option>
+              <option value="AÇÃO">Ações</option>
+            </select>
+          </div>
         </div>
+
+        <!-- Legenda Investidor 10 -->
+        <div style="display: flex; gap: 16px; font-size: 11.5px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 12px; height: 12px; border-radius: 2px; background: #10b981;"></span>
+            <span style="color: var(--text-secondary); font-weight: 500;">Valor aplicado</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 12px; height: 12px; border-radius: 2px; background: #34d399;"></span>
+            <span style="color: var(--text-secondary); font-weight: 500;">Ganho de Capital</span>
+          </div>
+        </div>
+
+        <div id="portfolioEvolutionChartContainer" style="flex: 1; min-height: 260px;"></div>
       </div>
 
-      <!-- Legenda do Gráfico -->
-      <div style="display: flex; gap: 16px; font-size: 12px; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="width: 12px; height: 12px; border-radius: 3px; background: #10b981;"></span>
-          <span style="color: var(--text-secondary); font-weight: 500;">Valor investido</span>
+      <!-- COLUNA 2: ATIVOS NA CARTEIRA (DONUT CHART ROSCA) -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-card); display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <h2 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0;">Ativos na Carteira</h2>
+          <select id="filterDonutType" style="padding: 5px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 11.5px; font-weight: 600;">
+            <option value="ALL">Todos os tipos</option>
+          </select>
         </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="width: 12px; height: 12px; border-radius: 3px; background: #34d399;"></span>
-          <span style="color: var(--text-secondary); font-weight: 500;">Ganho de Capital (Lucro Real)</span>
-        </div>
+        <div id="portfolioDonutChartContainer" style="flex: 1; min-height: 260px; display: flex; align-items: center; justify-content: center;"></div>
       </div>
 
-      <!-- Gráfico SVG Empilhado -->
-      <div id="portfolioEvolutionChartContainer" style="min-height: 220px;"></div>
     </div>
 
-    <!-- SEÇÃO: MEUS ATIVOS AGRUPADOS POR CLASSE (EXATO COMO NO APP DO GUILHERME) -->
+    <!-- 3. SEÇÃO: MEUS ATIVOS AGRUPADOS POR CLASSE (INVESTIDOR 10) -->
     <div style="margin-bottom: 32px;">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
         <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;" id="portfolioAssetsGroupTitle">
-          Meus ativos (2)
+          Meus Ativos (0)
         </h2>
-        <button id="btnAddNewAssetFast" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-md); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 12.5px; font-weight: 700; cursor: pointer;">
+        <button id="btnAddNewAssetFast" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-md); background: var(--emerald-500); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; border: none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          <span>Adicionar ativo</span>
+          <span>+ Adicionar Lançamento</span>
         </button>
       </div>
 
-      <!-- Cards de Grupos de Ativos -->
-      <div id="portfolioAssetGroupsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+      <!-- Container dos Grupos Injetados Dinamicamente -->
+      <div id="portfolioAssetGroupsContainer" style="display: flex; flex-direction: column; gap: 14px;">
         <!-- Injetado via JS -->
       </div>
     </div>
 
   </main>
 
-  <!-- MODAL PARA ADICIONAR ATIVO / CDB RENDA FIXA COM CÁLCULO DE DIAS ÚTEIS -->
-  <div class="modal-overlay" id="addAssetModal" aria-hidden="true" role="dialog">
-    <div class="modal-sheet" style="max-width: 480px;">
-      <div class="modal-header">
-        <h2 style="font-size: 17px; font-weight: 800; color: var(--text-primary);">Lançar Ativo na Carteira</h2>
-        <button class="modal-close-btn" id="addAssetCloseBtn" aria-label="Fechar">&times;</button>
+  <!-- MODAL: LANÇAR ATIVO NA CARTEIRA (IDÊNTICO AOS PRINTS DO GUILHERME) -->
+  <div class="modal-overlay" id="addAssetModal" aria-hidden="true" role="dialog" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;">
+    <div class="modal-sheet" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); width: 100%; max-width: 490px; max-height: 94vh; overflow-y: auto; box-shadow: var(--shadow-floating);">
+      
+      <!-- Topo com seta de voltar e título -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; background: var(--bg-surface); z-index: 5;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="addAssetBackBtn" type="button" style="background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; padding: 4px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0;">Adicionar ativo</h2>
+        </div>
+        <button class="modal-close-btn" id="addAssetCloseBtn" style="background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer;">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 20px;">
+
+      <div style="padding: 20px;">
         <form id="addAssetCustomForm">
-          <div style="margin-bottom: 14px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Tipo de Ativo</label>
-            <select id="newAssetType" style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
-              <option value="RENDA_FIXA">Renda Fixa / CDB 100% CDI (Dias Úteis B3)</option>
-              <option value="FII">Fundo Imobiliário (FII)</option>
-              <option value="AÇÃO">Ação B3</option>
+          
+          <!-- SELETOR COMPRA / VENDA (IDÊNTICO AO PRINT) -->
+          <div style="display: flex; background: var(--bg-surface-elevated); padding: 4px; border-radius: var(--radius-md); margin-bottom: 18px; border: 1px solid var(--border-subtle);">
+            <button type="button" id="tabOpCompra" style="flex: 1; padding: 9px; border: none; background: var(--bg-surface); color: var(--text-primary); font-weight: 700; font-size: 13px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <span>Compra</span>
+            </button>
+            <button type="button" id="tabOpVenda" style="flex: 1; padding: 9px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 13px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+              <span>Venda</span>
+            </button>
+          </div>
+
+          <!-- TIPO DE ATIVO (SELECT) -->
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Tipo de ativo</label>
+            <select id="modalAssetCategory" style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; font-weight: 600;">
+              <option value="RENDA_FIXA">Renda Fixa</option>
+              <option value="FII">FIIs</option>
+              <option value="AÇÃO">Ações</option>
               <option value="FIAGRO">Fiagro</option>
+              <option value="CRIPTO">Cripto</option>
             </select>
           </div>
 
-          <div style="margin-bottom: 14px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Código / Nome</label>
-            <input type="text" id="newAssetTicker" placeholder="ex: CDB Banco Inter ou MXRF11" required style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; font-weight: 700;">
+          <!-- SEÇÃO DINÂMICA 1: RENDA FIXA (PRINT 1 DO GUILHERME) -->
+          <div id="sectionRendaFixaFields">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Emissor *</label>
+                <input type="text" id="rfEmissor" placeholder="Emissor (ex: Banco Inter)" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Tipo de investimento *</label>
+                <select id="rfTipoInvestimento" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px;">
+                  <option value="CDB">CDB</option>
+                  <option value="LCI">LCI</option>
+                  <option value="LCA">LCA</option>
+                  <option value="Tesouro Selic">Tesouro Selic</option>
+                  <option value="Tesouro IPCA+">Tesouro IPCA+</option>
+                  <option value="CRI">CRI</option>
+                  <option value="CRA">CRA</option>
+                  <option value="Debênture">Debênture</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Forma</label>
+                <select id="rfForma" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px;">
+                  <option value="PÓS-FIXADO">PÓS-FIXADO</option>
+                  <option value="PRÉ-FIXADO">PRÉ-FIXADO</option>
+                  <option value="HÍBRIDO">HÍBRIDO / IPCA+</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Valor em R$ *</label>
+                <input type="number" id="rfValor" step="0.01" min="0.01" placeholder="0,00" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Data de Compra *</label>
+                <input type="date" id="rfDataCompra" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Indexador *</label>
+                <select id="rfIndexador" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px;">
+                  <option value="CDI">CDI</option>
+                  <option value="IPCA">IPCA</option>
+                  <option value="SELIC">SELIC</option>
+                  <option value="PRÉ">PRÉ</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 4px 2px;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Liquidez diária</span>
+              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                <input type="checkbox" id="rfLiquidezDiaria" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-subtle); border-radius: 24px; transition: .25s;"></span>
+              </label>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Data de vencimento *</label>
+                <input type="date" id="rfDataVencimento" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Taxa do CDI *</label>
+                <div style="position: relative;">
+                  <input type="number" id="rfTaxaCDI" step="0.1" value="100" placeholder="100" style="width: 100%; padding: 11px 28px 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+                  <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); font-size: 13px;">%</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-            <div>
-              <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Valor Investido (R$)</label>
-              <input type="number" id="newAssetInvested" step="0.01" min="0.01" placeholder="ex: 638.60" required style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; font-family: monospace;">
+          <!-- SEÇÃO DINÂMICA 2: AÇÕES E FIIS (PRINTS 2 E 3 DO GUILHERME) -->
+          <div id="sectionVariableFields" style="display: none;">
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Ativo *</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="varAssetSelect" style="flex: 1; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-weight: 700;">
+                  <option value="">Selecione um ativo...</option>
+                </select>
+                <input type="text" id="varCustomTicker" placeholder="Ou digite o ticker" style="width: 140px; padding: 11px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px; font-family: monospace; font-weight: 700; text-transform: uppercase;">
+              </div>
             </div>
-            <div>
-              <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Data da Aplicação</label>
-              <input type="date" id="newAssetDate" required style="width: 100%; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; font-family: monospace;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Data de compra *</label>
+                <input type="date" id="varDataCompra" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Quantidade *</label>
+                <input type="number" id="varQuantidade" min="1" step="1" value="1" placeholder="0" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Preço em R$ *</label>
+                <input type="number" id="varPreco" step="0.01" min="0.01" placeholder="0,00" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Outros custos</label>
+                <input type="number" id="varCustos" step="0.01" min="0" value="0.00" placeholder="0,00" style="width: 100%; padding: 11px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13.5px; font-family: monospace;">
+              </div>
             </div>
           </div>
 
-          <button type="submit" style="width: 100%; padding: 12px; background: var(--emerald-500); color: #fff; font-weight: 700; border: none; border-radius: var(--radius-md); font-size: 14px; cursor: pointer;">
-            Salvar Ativo no Banco de Dados
+          <!-- CAIXA DE VALOR TOTAL (IDÊNTICA AOS PRINTS) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+            <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Valor total:</span>
+            <span id="modalCalculatedTotal" style="font-size: 16px; font-weight: 800; font-family: monospace; color: var(--emerald-400);">R$ 0,00</span>
+          </div>
+
+          <!-- BOTÃO PRINCIPAL (ESTILO INVESTIDOR 10) -->
+          <button type="submit" id="btnSubmitAddAssetForm" style="width: 100%; padding: 13px; background: var(--text-primary); color: var(--text-inverse); font-weight: 800; font-size: 14px; border: none; border-radius: var(--radius-md); cursor: pointer; transition: transform 150ms ease;">
+            + Adicionar ativo
           </button>
         </form>
       </div>
+
     </div>
   </div>
 

@@ -132,27 +132,36 @@ const FinancialCharts = {
   },
 
   /**
-   * Renderiza um Gráfico de Rosca (Donut Chart) para Alocação da Carteira
+   * Renderiza um Gráfico de Rosca (Donut Chart) Idêntico ao Investidor 10
    * @param {string} containerId ID do elemento
    * @param {Array<{label: string, value: number, color: string}>} slices Fatias
    */
   renderDonutChart(containerId, slices) {
     const container = document.getElementById(containerId);
-    if (!container || !slices || slices.length === 0) return;
+    if (!container) return;
+
+    if (!slices || slices.length === 0 || slices.every(s => s.value <= 0)) {
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; color: var(--text-muted); text-align: center;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 12px;"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+          <div style="font-size: 13.5px; font-weight: 600; color: var(--text-secondary);">Sem ativos na carteira</div>
+          <div style="font-size: 11.5px; margin-top: 4px;">Adicione ativos para visualizar a divisão percentual</div>
+        </div>
+      `;
+      return;
+    }
 
     const total = slices.reduce((acc, s) => acc + s.value, 0);
-    if (total <= 0) return;
-
-    const size = 200;
-    const strokeWidth = 28;
+    const size = 190;
+    const strokeWidth = 36;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     let accumulatedAngle = 0;
 
     const paths = slices.map(s => {
+      if (s.value <= 0) return '';
       const slicePct = s.value / total;
       const strokeDash = slicePct * circumference;
-      const strokeDashoffset = circumference - strokeDash;
       const rotation = (accumulatedAngle / total) * 360 - 90;
       accumulatedAngle += s.value;
 
@@ -161,34 +170,30 @@ const FinancialCharts = {
           stroke="${s.color}" stroke-width="${strokeWidth}"
           stroke-dasharray="${strokeDash} ${circumference}"
           transform="rotate(${rotation} ${size / 2} ${size / 2})"
-          stroke-linecap="round">
-          <title>${s.label}: ${((s.value / total) * 100).toFixed(1)}%</title>
+          style="transition: stroke-width 150ms ease; cursor: pointer;">
+          <title>${s.label}: ${((s.value / total) * 100).toFixed(2).replace('.', ',')}% (R$ ${s.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</title>
         </circle>
       `;
     }).join('');
 
     const legend = slices.map(s => `
-      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 1px dashed var(--border-subtle);">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${s.color};"></span>
-          <span style="color: var(--text-secondary); font-weight: 500;">${s.label}</span>
+          <span style="width: 10px; height: 10px; border-radius: 2px; background: ${s.color}; display: inline-block;"></span>
+          <span style="color: var(--text-secondary); font-weight: 600;">${s.label}</span>
         </div>
-        <span style="font-family: monospace; font-weight: 700; color: var(--text-primary);">${((s.value / total) * 100).toFixed(1)}%</span>
+        <span style="font-family: monospace; font-weight: 700; color: var(--text-primary); font-size: 13px;">${((s.value / total) * 100).toFixed(2).replace('.', ',')}%</span>
       </div>
     `).join('');
 
     container.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap;">
-        <div style="position: relative; width: ${size}px; height: ${size}px;">
+      <div style="display: flex; align-items: center; justify-content: space-around; gap: 24px; flex-wrap: wrap; padding: 12px 0;">
+        <div style="position: relative; width: ${size}px; height: ${size}px; flex-shrink: 0;">
           <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
             ${paths}
           </svg>
-          <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
-            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Alocação</span>
-            <span style="font-size: 16px; font-weight: 800; font-family: monospace; color: var(--text-primary);">Total</span>
-          </div>
         </div>
-        <div style="flex: 1; min-width: 180px;">
+        <div style="flex: 1; min-width: 170px;">
           ${legend}
         </div>
       </div>
@@ -196,76 +201,92 @@ const FinancialCharts = {
   },
 
   /**
-   * Renderiza Gráfico de Evolução Patrimonial Empilhado: Valor Investido vs Ganho de Capital (Lucro)
-   * Inspirado no design executivo solicitado pelo Guilherme
+   * Renderiza Gráfico de Evolução Patrimonial Empilhado Idêntico ao Investidor 10
    * @param {string} containerId ID do container
    * @param {Array<{label: string, invested: number, profit: number}>} data
    */
   renderStackedEvolutionBars(containerId, data) {
     const container = document.getElementById(containerId);
-    if (!container || !data || data.length === 0) return;
+    if (!container) return;
 
-    const height = 220;
-    const vbWidth = 600;
-    const paddingX = 40;
+    if (!data || data.length === 0 || data.every(d => d.invested <= 0)) {
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; color: var(--text-muted); text-align: center;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 10px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <div style="font-size: 13.5px; font-weight: 600; color: var(--text-secondary);">Sem histórico de evolução patrimonial</div>
+          <div style="font-size: 11.5px; margin-top: 4px;">Faça lançamentos na sua carteira para gerar os dados mensais</div>
+        </div>
+      `;
+      return;
+    }
+
+    const height = 260;
+    const vbWidth = 640;
+    const paddingLeft = 65;
+    const paddingRight = 20;
     const paddingTop = 25;
     const paddingBottom = 35;
     const chartHeight = height - paddingTop - paddingBottom;
-    const chartWidth = vbWidth - (paddingX * 2);
+    const chartWidth = vbWidth - paddingLeft - paddingRight;
 
-    const totals = data.map(d => d.invested + Math.max(0, d.profit));
-    const maxVal = Math.max(...totals) * 1.15 || 1000;
+    // Calcula valor máximo arredondado em centenas (estilo Investidor 10: R$ 100, R$ 200, ... R$ 700)
+    const totals = data.map(d => (d.invested || 0) + Math.max(0, d.profit || 0));
+    const highest = Math.max(...totals, 100);
+    const stepInterval = highest > 5000 ? 1000 : (highest > 1000 ? 250 : 100);
+    const maxVal = Math.ceil(highest / stepInterval) * stepInterval + stepInterval;
+
+    // Linhas horizontais de grade com intervalos exatos
+    const numLines = Math.floor(maxVal / stepInterval);
+    let gridLinesSvg = '';
+    for (let i = 0; i <= numLines; i++) {
+      const val = i * stepInterval;
+      const y = height - paddingBottom - (val / maxVal) * chartHeight;
+      gridLinesSvg += `
+        <line x1="${paddingLeft}" y1="${y}" x2="${vbWidth - paddingRight}" y2="${y}" stroke="var(--border-subtle)" stroke-dasharray="3 3" stroke-width="1" opacity="0.6"/>
+        <text x="${paddingLeft - 10}" y="${y + 3.5}" text-anchor="end" font-size="10.5" fill="var(--text-muted)" font-family="monospace">R$ ${val}</text>
+      `;
+    }
+
+    // Colunas de barras
     const stepX = chartWidth / data.length;
-    const barWidth = Math.min(56, stepX * 0.55);
+    const barWidth = Math.min(84, Math.max(48, stepX * 0.65));
 
-    const bars = data.map((item, idx) => {
-      const x = paddingX + (idx * stepX) + (stepX - barWidth) / 2;
-      const total = item.invested + item.profit;
-      
-      const investedH = (item.invested / maxVal) * chartHeight;
-      const profitH = (Math.max(0, item.profit) / maxVal) * chartHeight;
+    const barsSvg = data.map((item, idx) => {
+      const x = paddingLeft + (idx * stepX) + (stepX - barWidth) / 2;
+      const total = (item.invested || 0) + (item.profit || 0);
+
+      const investedH = ((item.invested || 0) / maxVal) * chartHeight;
+      const profitH = (Math.max(0, item.profit || 0) / maxVal) * chartHeight;
 
       const yInvested = height - paddingBottom - investedH;
       const yProfit = yInvested - profitH;
 
       return `
-        <g class="chart-bar-group">
-          <!-- Barra do Valor Investido (Verde Base) -->
-          <rect x="${x}" y="${yInvested}" width="${barWidth}" height="${investedH}" rx="3" fill="#10b981" opacity="0.9">
-            <title>Investido: R$ ${item.invested.toFixed(2)}</title>
+        <g class="chart-bar-group" style="cursor: pointer;">
+          <!-- Barra Base: Valor Aplicado (Verde Médio Investidor 10 #10b981) -->
+          <rect x="${x}" y="${yInvested}" width="${barWidth}" height="${investedH}" fill="#10b981" rx="1">
+            <title>Data: ${item.label}&#10;Valor Aplicado: R$ ${item.invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}&#10;Ganho de Capital: R$ ${item.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}&#10;Total: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</title>
           </rect>
 
-          <!-- Barra do Ganho de Capital / Lucro (Verde Menta Topo) -->
+          <!-- Barra Topo: Ganho de Capital (Verde Claro Investidor 10 #34d399) -->
           ${profitH > 0 ? `
-            <rect x="${x}" y="${yProfit}" width="${barWidth}" height="${profitH}" rx="3" fill="#34d399">
-              <title>Lucro Real: +R$ ${item.profit.toFixed(2)}</title>
+            <rect x="${x}" y="${yProfit}" width="${barWidth}" height="${profitH}" fill="#34d399" rx="1">
+              <title>Ganho de Capital: +R$ ${item.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</title>
             </rect>
           ` : ''}
 
-          <!-- Rótulo do Total no topo da barra -->
-          <text x="${x + barWidth / 2}" y="${(profitH > 0 ? yProfit : yInvested) - 8}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--text-primary)" font-family="monospace">
-            R$ ${total.toFixed(0)}
-          </text>
-
           <!-- Rótulo do Mês no Eixo X -->
-          <text x="${x + barWidth / 2}" y="${height - 12}" text-anchor="middle" font-size="11.5" fill="var(--text-muted)" font-weight="600">
+          <text x="${x + barWidth / 2}" y="${height - 12}" text-anchor="middle" font-size="11" fill="var(--text-muted)" font-weight="600" font-family="monospace">
             ${item.label}
           </text>
         </g>
       `;
     }).join('');
 
-    const gridLines = `
-      <line x1="${paddingX}" y1="${height - paddingBottom}" x2="${vbWidth - paddingX}" y2="${height - paddingBottom}" stroke="var(--border-subtle)" stroke-width="1"/>
-      <line x1="${paddingX}" y1="${paddingTop + chartHeight / 2}" x2="${vbWidth - paddingX}" y2="${paddingTop + chartHeight / 2}" stroke="var(--border-subtle)" stroke-dasharray="4 4" stroke-width="1"/>
-      <text x="${paddingX - 6}" y="${paddingTop + chartHeight / 2 + 4}" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="monospace">R$ ${(maxVal / 2).toFixed(0)}</text>
-      <text x="${paddingX - 6}" y="${paddingTop + 6}" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="monospace">R$ ${maxVal.toFixed(0)}</text>
-    `;
-
     container.innerHTML = `
-      <svg viewBox="0 0 ${vbWidth} ${height}" style="width: 100%; height: auto; display: block;">
-        ${gridLines}
-        ${bars}
+      <svg viewBox="0 0 ${vbWidth} ${height}" style="width: 100%; height: auto; display: block; overflow: visible;">
+        ${gridLinesSvg}
+        ${barsSvg}
       </svg>
     `;
   }

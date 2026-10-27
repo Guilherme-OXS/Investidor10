@@ -744,25 +744,328 @@ function renderComparator() {
 // Cálculo Exato de Dias Úteis B3 (CDI Base 252) + Gráficos Empilhados (Fotos do Guilherme)
 // ==========================================================================
 function initPortfolioPage() {
-  // 1. Garante que há um usuário ativo na sessão
   let currentUser = window.InvestAuth ? InvestAuth.getCurrentUser() : null;
   if (!currentUser) {
     window.location.replace('/login');
     return;
   }
 
-  // 2. Atualiza o Título com o Nome do Proprietário da Carteira
+  // Título com o nome do proprietário
   const ownerTitle = document.getElementById('portfolioOwnerTitle');
   if (ownerTitle && currentUser) {
-    ownerTitle.textContent = `Carteira de ${currentUser.name}`;
+    ownerTitle.textContent = `Carteira de ${currentUser.name || currentUser.username}`;
   }
 
-  // 3. Modais de Inserção de Ativos
-  const btnOpenModal = document.getElementById('btnOpenAddAssetModal');
-  const btnFastAdd = document.getElementById('btnAddNewAssetFast');
+  // Elementos do Modal de Lançamentos
   const addModal = document.getElementById('addAssetModal');
   const addCloseBtn = document.getElementById('addAssetCloseBtn');
+  const addBackBtn = document.getElementById('addAssetBackBtn');
   const customForm = document.getElementById('addAssetCustomForm');
+  const tabCompra = document.getElementById('tabOpCompra');
+  const tabVenda = document.getElementById('tabOpVenda');
+  const modalCategory = document.getElementById('modalAssetCategory');
+
+  // Seções dinâmicas
+  const sectionRendaFixa = document.getElementById('sectionRendaFixaFields');
+  const sectionVariable = document.getElementById('sectionVariableFields');
+
+  // Campos Renda Fixa
+  const rfEmissor = document.getElementById('rfEmissor');
+  const rfTipoInvestimento = document.getElementById('rfTipoInvestimento');
+  const rfForma = document.getElementById('rfForma');
+  const rfValor = document.getElementById('rfValor');
+  const rfDataCompra = document.getElementById('rfDataCompra');
+  const rfIndexador = document.getElementById('rfIndexador');
+  const rfLiquidezDiaria = document.getElementById('rfLiquidezDiaria');
+  const rfDataVencimento = document.getElementById('rfDataVencimento');
+  const rfTaxaCDI = document.getElementById('rfTaxaCDI');
+
+  // Campos Variável
+  const varAssetSelect = document.getElementById('varAssetSelect');
+  const varCustomTicker = document.getElementById('varCustomTicker');
+  const varDataCompra = document.getElementById('varDataCompra');
+  const varQuantidade = document.getElementById('varQuantidade');
+  const varPreco = document.getElementById('varPreco');
+  const varCustos = document.getElementById('varCustos');
+
+  // Total Calculado no Modal
+  const modalCalculatedTotal = document.getElementById('modalCalculatedTotal');
+
+  let currentOperation = 'COMPRA'; // 'COMPRA' ou 'VENDA'
+
+  // Popula opções de ativos variáveis
+  function populateVariableAssets(category) {
+    if (!varAssetSelect) return;
+    const assets = typeof getAssetsData === 'function' ? getAssetsData() : (window.ASSETS_DATA || []);
+    let filtered = assets;
+    if (category === 'FII') filtered = assets.filter(a => a.type === 'FII');
+    else if (category === 'AÇÃO') filtered = assets.filter(a => a.type === 'AÇÃO' || !a.type);
+    else if (category === 'FIAGRO') filtered = assets.filter(a => a.type === 'FIAGRO');
+    else if (category === 'CRIPTO') filtered = assets.filter(a => a.type === 'CRIPTO');
+
+    varAssetSelect.innerHTML = '<option value="">Selecione um ativo...</option>' +
+      filtered.map(a => `<option value="${a.ticker}" data-price="${a.price}">${a.ticker} - ${a.name} (R$ ${a.price.toFixed(2).replace('.', ',')})</option>`).join('');
+  }
+
+  // Atualiza o valor total em tempo real no modal
+  function updateModalTotal() {
+    if (!modalCalculatedTotal) return;
+    const cat = modalCategory ? modalCategory.value : 'RENDA_FIXA';
+    let total = 0;
+    if (cat === 'RENDA_FIXA') {
+      total = parseFloat(rfValor ? rfValor.value : 0) || 0;
+    } else {
+      const q = parseFloat(varQuantidade ? varQuantidade.value : 0) || 0;
+      const p = parseFloat(varPreco ? varPreco.value : 0) || 0;
+      const c = parseFloat(varCustos ? varCustos.value : 0) || 0;
+      total = (q * p) + c;
+    }
+    modalCalculatedTotal.textContent = `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  // Alterna entre Compra e Venda
+  function setOperation(op) {
+    currentOperation = op;
+    if (tabCompra && tabVenda) {
+      if (op === 'COMPRA') {
+        tabCompra.style.background = 'var(--bg-surface)';
+        tabCompra.style.color = 'var(--text-primary)';
+        tabCompra.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+        tabVenda.style.background = 'transparent';
+        tabVenda.style.color = 'var(--text-muted)';
+        tabVenda.style.boxShadow = 'none';
+      } else {
+        tabVenda.style.background = 'var(--bg-surface)';
+        tabVenda.style.color = 'var(--text-primary)';
+        tabVenda.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+        tabCompra.style.background = 'transparent';
+        tabCompra.style.color = 'var(--text-muted)';
+        tabCompra.style.boxShadow = 'none';
+      }
+    }
+  }
+
+  if (tabCompra) tabCompra.addEventListener('click', () => setOperation('COMPRA'));
+  if (tabVenda) tabVenda.addEventListener('click', () => setOperation('VENDA'));
+
+  // Alterna entre Renda Fixa e Renda Variável
+  function onCategoryChange() {
+    const cat = modalCategory ? modalCategory.value : 'RENDA_FIXA';
+    if (cat === 'RENDA_FIXA') {
+      if (sectionRendaFixa) sectionRendaFixa.style.display = 'block';
+      if (sectionVariable) sectionVariable.style.display = 'none';
+    } else {
+      if (sectionRendaFixa) sectionRendaFixa.style.display = 'none';
+      if (sectionVariable) sectionVariable.style.display = 'block';
+      populateVariableAssets(cat);
+    }
+    updateModalTotal();
+  }
+
+  if (modalCategory) {
+    modalCategory.addEventListener('change', onCategoryChange);
+  }
+
+  // Eventos de auto-preenchimento de ativos
+  if (varAssetSelect) {
+    varAssetSelect.addEventListener('change', () => {
+      const selected = varAssetSelect.selectedOptions[0];
+      if (selected && selected.value) {
+        if (varCustomTicker) varCustomTicker.value = selected.value;
+        const pr = parseFloat(selected.dataset.price);
+        if (!isNaN(pr) && pr > 0 && varPreco) {
+          varPreco.value = pr.toFixed(2);
+        }
+      }
+      updateModalTotal();
+    });
+  }
+
+  if (varCustomTicker) {
+    varCustomTicker.addEventListener('input', () => {
+      const t = varCustomTicker.value.trim().toUpperCase();
+      const assets = typeof getAssetsData === 'function' ? getAssetsData() : (window.ASSETS_DATA || []);
+      const found = assets.find(a => a.ticker === t);
+      if (found) {
+        if (varAssetSelect) varAssetSelect.value = found.ticker;
+        if (varPreco) varPreco.value = found.price.toFixed(2);
+      }
+      updateModalTotal();
+    });
+  }
+
+  // Ouvintes de input para cálculo ao vivo
+  [rfValor, varQuantidade, varPreco, varCustos].forEach(inp => {
+    if (inp) inp.addEventListener('input', updateModalTotal);
+  });
+
+  // Switch de Liquidez Diária
+  if (rfLiquidezDiaria && rfDataVencimento) {
+    rfLiquidezDiaria.addEventListener('change', () => {
+      if (rfLiquidezDiaria.checked) {
+        rfDataVencimento.disabled = true;
+        rfDataVencimento.style.opacity = '0.4';
+      } else {
+        rfDataVencimento.disabled = false;
+        rfDataVencimento.style.opacity = '1';
+      }
+    });
+  }
+
+  // Abre e fecha o modal
+  const openModal = (targetCategory = null) => {
+    if (addModal) {
+      addModal.style.display = 'flex';
+      addModal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+
+      const today = new Date().toISOString().split('T')[0];
+      if (rfDataCompra && !rfDataCompra.value) rfDataCompra.value = today;
+      if (varDataCompra && !varDataCompra.value) varDataCompra.value = today;
+
+      if (targetCategory && modalCategory) {
+        modalCategory.value = targetCategory;
+      }
+      onCategoryChange();
+      setOperation('COMPRA');
+      updateModalTotal();
+    }
+  };
+
+  const closeModal = () => {
+    if (addModal) {
+      addModal.style.display = 'none';
+      addModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  };
+
+  // Botões de abertura de modal
+  const btnOpenModal = document.getElementById('btnOpenAddAssetModal');
+  const btnFastAdd = document.getElementById('btnAddNewAssetFast');
+  const btnHeaderAdd = document.getElementById('btnHeaderAddLaunch');
+
+  if (btnOpenModal) btnOpenModal.addEventListener('click', () => openModal());
+  if (btnFastAdd) btnFastAdd.addEventListener('click', () => openModal());
+  if (btnHeaderAdd) btnHeaderAdd.addEventListener('click', () => openModal());
+  if (addCloseBtn) addCloseBtn.addEventListener('click', closeModal);
+  if (addBackBtn) addBackBtn.addEventListener('click', closeModal);
+
+  if (addModal) {
+    addModal.addEventListener('click', (e) => {
+      if (e.target === addModal) closeModal();
+    });
+  }
+
+  // Submissão do formulário de lançamento
+  if (customForm) {
+    customForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cat = modalCategory ? modalCategory.value : 'RENDA_FIXA';
+      const userPortfolio = InvestAuth.getUserPortfolio();
+      let newItem = null;
+
+      if (cat === 'RENDA_FIXA') {
+        const emissor = rfEmissor ? rfEmissor.value.trim() : 'Banco Inter';
+        const tipoInv = rfTipoInvestimento ? rfTipoInvestimento.value : 'CDB';
+        const forma = rfForma ? rfForma.value : 'PÓS-FIXADO';
+        const valor = rfValor ? (parseFloat(rfValor.value) || 0) : 0;
+        const dataCompra = (rfDataCompra && rfDataCompra.value) ? rfDataCompra.value : new Date().toISOString().split('T')[0];
+        const indexador = rfIndexador ? rfIndexador.value : 'CDI';
+        const liquidez = rfLiquidezDiaria ? rfLiquidezDiaria.checked : true;
+        const vencimento = liquidez ? 'Liquidez Diária' : (rfDataVencimento && rfDataVencimento.value ? rfDataVencimento.value : '2026-12-31');
+        const taxaCDI = rfTaxaCDI ? (parseFloat(rfTaxaCDI.value) || 100) : 100;
+
+        if (valor <= 0) {
+          alert('Por favor, informe um valor válido para o investimento.');
+          return;
+        }
+
+        const cleanEmissor = emissor.replace(/Banco /i, '');
+        const formatTitle = `${tipoInv} - ${cleanEmissor} - ${forma.charAt(0) + forma.slice(1).toLowerCase()} - ${taxaCDI}% ${indexador}`;
+
+        newItem = {
+          ticker: formatTitle,
+          nome: formatTitle,
+          tipo: 'RENDA_FIXA',
+          emissor: emissor,
+          tipoInvestimento: tipoInv,
+          forma: forma,
+          indexador: indexador,
+          percentualCDI: taxaCDI,
+          cdiAnual: 10.65,
+          liquidezDiaria: liquidez,
+          dataVencimento: vencimento,
+          valorInvestido: valor,
+          dataAplicacao: dataCompra,
+          operacao: currentOperation
+        };
+      } else {
+        const ticker = (varCustomTicker && varCustomTicker.value ? varCustomTicker.value : (varAssetSelect ? varAssetSelect.value : '')).trim().toUpperCase();
+        const qty = varQuantidade ? (parseFloat(varQuantidade.value) || 0) : 0;
+        const preco = varPreco ? (parseFloat(varPreco.value) || 0) : 0;
+        const custos = varCustos ? (parseFloat(varCustos.value) || 0) : 0;
+        const dataCompra = (varDataCompra && varDataCompra.value) ? varDataCompra.value : new Date().toISOString().split('T')[0];
+
+        if (!ticker || qty <= 0 || preco <= 0) {
+          alert('Por favor, informe o ativo, quantidade e preço válidos.');
+          return;
+        }
+
+        const allAssets = typeof getAssetsData === 'function' ? getAssetsData() : (window.ASSETS_DATA || []);
+        const ref = allAssets.find(a => a.ticker === ticker);
+        const totalInvest = (qty * preco) + custos;
+
+        newItem = {
+          ticker: ticker,
+          nome: ref ? ref.name : ticker,
+          tipo: cat,
+          quantidade: qty,
+          precoMedio: preco,
+          custos: custos,
+          valorInvestido: totalInvest,
+          dataAplicacao: dataCompra,
+          operacao: currentOperation
+        };
+      }
+
+      // Adiciona ou abate da carteira
+      if (currentOperation === 'COMPRA' && newItem.tipo !== 'RENDA_FIXA') {
+        const existingIdx = userPortfolio.findIndex(it => it.ticker === newItem.ticker && it.tipo === newItem.tipo);
+        if (existingIdx >= 0) {
+          const ex = userPortfolio[existingIdx];
+          const newQty = (ex.quantidade || 0) + newItem.quantidade;
+          const newTotal = (ex.valorInvestido || 0) + newItem.valorInvestido;
+          ex.quantidade = newQty;
+          ex.valorInvestido = newTotal;
+          ex.precoMedio = newTotal / newQty;
+        } else {
+          userPortfolio.push(newItem);
+        }
+      } else if (currentOperation === 'VENDA' && newItem.tipo !== 'RENDA_FIXA') {
+        const existingIdx = userPortfolio.findIndex(it => it.ticker === newItem.ticker && it.tipo === newItem.tipo);
+        if (existingIdx >= 0) {
+          const ex = userPortfolio[existingIdx];
+          if ((ex.quantidade || 0) <= newItem.quantidade) {
+            userPortfolio.splice(existingIdx, 1);
+          } else {
+            ex.quantidade -= newItem.quantidade;
+            ex.valorInvestido = ex.quantidade * (ex.precoMedio || 0);
+          }
+        } else {
+          alert('Você não possui este ativo em carteira para vender.');
+          return;
+        }
+      } else {
+        userPortfolio.push(newItem);
+      }
+
+      InvestAuth.saveUserPortfolio(userPortfolio);
+      closeModal();
+      customForm.reset();
+      renderPortfolioPage();
+    });
+  }
 
   // Gestão Exclusiva de Convites VIP (Guilherme Otávio)
   const btnInvite = document.getElementById('btnOpenInviteModal');
@@ -823,7 +1126,6 @@ function initPortfolioPage() {
       `;
     }).join('');
 
-    // Eventos de Copiar e Excluir
     invitesContainer.querySelectorAll('.btn-copy-invite').forEach(btn => {
       btn.addEventListener('click', () => {
         const c = btn.getAttribute('data-code');
@@ -867,7 +1169,6 @@ function initPortfolioPage() {
       inviteModal.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
     });
-
     inviteModal.addEventListener('click', (e) => {
       if (e.target === inviteModal) {
         inviteModal.style.display = 'none';
@@ -910,80 +1211,8 @@ function initPortfolioPage() {
     });
   }
 
-  const openModal = () => {
-    if (addModal) {
-      addModal.classList.add('active');
-      addModal.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-      // Preenche a data de hoje por padrão
-      const dateInput = document.getElementById('newAssetDate');
-      if (dateInput && !dateInput.value) {
-        dateInput.value = new Date().toISOString().split('T')[0];
-      }
-    }
-  };
-
-  const closeModal = () => {
-    if (addModal) {
-      addModal.classList.remove('active');
-      addModal.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    }
-  };
-
-  if (btnOpenModal) btnOpenModal.addEventListener('click', openModal);
-  if (btnFastAdd) btnFastAdd.addEventListener('click', openModal);
-  if (addCloseBtn) addCloseBtn.addEventListener('click', closeModal);
-
-  // Fecha clicando fora
-  if (addModal) {
-    addModal.addEventListener('click', (e) => {
-      if (e.target === addModal) closeModal();
-    });
-  }
-
-  // Submissão do Formulário de Adicionar Ativo / CDB
-  if (customForm) {
-    customForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const type = document.getElementById('newAssetType').value;
-      const ticker = document.getElementById('newAssetTicker').value.trim();
-      const invested = parseFloat(document.getElementById('newAssetInvested').value) || 0;
-      const date = document.getElementById('newAssetDate').value;
-
-      if (!ticker || invested <= 0) {
-        alert('Por favor, informe os dados corretos do investimento.');
-        return;
-      }
-
-      if (window.InvestAuth) {
-        const userPortfolio = InvestAuth.getUserPortfolio();
-        
-        let newItem = {
-          ticker: ticker.toUpperCase(),
-          nome: ticker,
-          tipo: type,
-          valorInvestido: invested,
-          dataAplicacao: date || new Date().toISOString().split('T')[0]
-        };
-
-        if (type === 'RENDA_FIXA') {
-          newItem.percentualCDI = 100;
-          newItem.cdiAnual = 10.65;
-          newItem.instituicao = 'Banco Inter';
-        } else {
-          newItem.quantidade = 1;
-          newItem.precoMedio = invested;
-        }
-
-        userPortfolio.push(newItem);
-        InvestAuth.saveUserPortfolio(userPortfolio);
-        closeModal();
-        customForm.reset();
-        renderPortfolioPage();
-      }
-    });
-  }
+  // Expor openModal globalmente para ser acionado pelos botões das tabelas
+  window.openAddAssetModalWithCategory = openModal;
 
   // Renderização inicial
   renderPortfolioPage();
@@ -999,14 +1228,16 @@ function renderPortfolioPage() {
   let totalPatrimonio = 0;
   let totalLucro = 0;
 
-  // Processa cada ativo com o cálculo de rentabilidade real
+  // Processa cada ativo com cálculo de rentabilidade real
+  const allAssets = typeof getAssetsData === 'function' ? getAssetsData() : (window.ASSETS_DATA || []);
+
   portfolio.forEach(item => {
-    totalInvestido += (item.valorInvestido || 0);
+    const invested = parseFloat(item.valorInvestido) || 0;
+    totalInvestido += invested;
 
     if (item.tipo === 'RENDA_FIXA' && window.CDIEngine) {
-      // Cálculo de Rendimento Real de Renda Fixa com Dias Úteis B3
       const income = CDIEngine.calculateExactIncome(
-        item.valorInvestido,
+        invested,
         item.percentualCDI || 100,
         item.cdiAnual || 10.65,
         item.dataAplicacao || '2024-09-01'
@@ -1018,14 +1249,16 @@ function renderPortfolioPage() {
       totalPatrimonio += item.valorAtual;
       totalLucro += item.lucro;
     } else {
-      // Ativos de Renda Variável (FIIs, Ações)
-      const allAssets = getAssetsData();
       const refAsset = allAssets.find(a => a.ticker === item.ticker);
-      const currentPrice = refAsset ? refAsset.price : (item.cotacao || item.precoMedio || item.valorInvestido);
-      const qty = item.quantidade || 1;
+      const currentPrice = refAsset ? refAsset.price : (item.cotacao || item.precoMedio || invested);
+      const qty = parseFloat(item.quantidade) || 1;
+      item.cotacaoAtual = currentPrice;
       item.valorAtual = qty * currentPrice;
-      item.lucro = item.valorAtual - (item.valorInvestido || 0);
-      item.rentabilidadePct = item.valorInvestido > 0 ? ((item.lucro / item.valorInvestido) * 100) : 0;
+      item.lucro = item.valorAtual - invested;
+      item.rentabilidadePct = invested > 0 ? ((item.lucro / invested) * 100) : 0;
+      item.pvp = refAsset && refAsset.pvp ? refAsset.pvp : 0.96;
+      item.dy = refAsset && refAsset.dy ? refAsset.dy : 11.5;
+      item.ultimoRendimento = refAsset && refAsset.lastDividend ? refAsset.lastDividend : 0.10;
       totalPatrimonio += item.valorAtual;
       totalLucro += item.lucro;
     }
@@ -1033,13 +1266,17 @@ function renderPortfolioPage() {
 
   const rentabilidadeGeralPct = totalInvestido > 0 ? ((totalLucro / totalInvestido) * 100) : 0;
 
-  // 1. Atualiza os Cards de Destaque Superiores (Fotos 2 e 3 do Guilherme)
+  // 1. Atualiza os 4 Cards de Destaque Superiores (Fotos 2 e 3 do Guilherme)
   const cardPatrimonio = document.getElementById('cardPatrimonioTotal');
   const cardRentBadge = document.getElementById('cardRentabilidadeBadge');
   const cardInvestido = document.getElementById('cardValorInvestido');
   const cardLucro = document.getElementById('cardLucroTotal');
   const cardGanhoCapital = document.getElementById('cardGanhoCapital');
   const cardProventos = document.getElementById('cardProventos');
+  const cardProventos12M = document.getElementById('cardProventos12M');
+  const cardProventosTotal = document.getElementById('cardProventosTotal');
+  const badgeRent12M = document.getElementById('badgeRentabilidade12M');
+  const badgeRentTotal = document.getElementById('badgeRentabilidadeTotal');
 
   if (cardPatrimonio) {
     cardPatrimonio.textContent = `R$ ${totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1066,22 +1303,24 @@ function renderPortfolioPage() {
     } else {
       const isUp = totalLucro >= 0;
       cardLucro.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
-      cardLucro.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      cardLucro.textContent = `R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
   }
   if (cardGanhoCapital) {
-    if (totalInvestido === 0) {
-      cardGanhoCapital.textContent = 'R$ 0,00';
-    } else {
-      const isUp = totalLucro >= 0;
-      cardGanhoCapital.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+    cardGanhoCapital.textContent = `R$ ${Math.max(0, totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
-  if (cardProventos) {
-    cardProventos.textContent = 'R$ 0,00';
+  if (cardProventos) cardProventos.textContent = 'R$ 0,00';
+  if (cardProventos12M) cardProventos12M.textContent = 'R$ 0,00';
+  if (cardProventosTotal) cardProventosTotal.textContent = 'R$ 0,00';
+
+  if (badgeRent12M) {
+    badgeRent12M.innerHTML = `${rentabilidadeGeralPct.toFixed(2).replace('.', ',')}% &rarr;`;
+  }
+  if (badgeRentTotal) {
+    badgeRentTotal.innerHTML = `${rentabilidadeGeralPct.toFixed(2).replace('.', ',')}% &rarr;`;
   }
 
-  // 2. Gráfico Empilhado de Evolução do Patrimônio (Fotos 2 e 3 do Guilherme)
+  // 2. Gráfico de Evolução do Patrimônio (Coluna 1)
   const chartContainer = document.getElementById('portfolioEvolutionChartContainer');
   if (chartContainer) {
     if (totalInvestido === 0) {
@@ -1089,54 +1328,88 @@ function renderPortfolioPage() {
         <div style="text-align: center; padding: 42px 16px; color: var(--text-muted);">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 10px; opacity: 0.4;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
           <p style="font-size: 13.5px; font-weight: 600; margin-bottom: 4px; color: var(--text-secondary);">Gráfico de Evolução Aguardando Dados</p>
-          <p style="font-size: 12px; max-width: 360px; margin: 0 auto;">Adicione seus investimentos pelo botão <strong>+</strong> acima para acompanhar a evolução do patrimônio e lucro mês a mês.</p>
+          <p style="font-size: 12px; max-width: 360px; margin: 0 auto;">Adicione seus investimentos pelo botão <strong>+ Adicionar Lançamento</strong> para acompanhar a evolução do patrimônio mês a mês.</p>
         </div>
       `;
     } else if (window.FinancialCharts && FinancialCharts.renderStackedEvolutionBars) {
+      // Cria a série mensal com base nos meses reais
+      const d = new Date();
+      const curMonth = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+      const prevD = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const prevMonth = `${String(prevD.getMonth() + 1).padStart(2, '0')}/${String(prevD.getFullYear()).slice(-2)}`;
+
       const evolutionData = [
-        { label: 'Out/25', invested: totalInvestido * 0.92, profit: Math.max(0, totalLucro * 0.25) },
-        { label: 'Nov/25', invested: totalInvestido * 0.94, profit: Math.max(0, totalLucro * 0.40) },
-        { label: 'Dez/25', invested: totalInvestido * 0.96, profit: Math.max(0, totalLucro * 0.55) },
-        { label: 'Jan/26', invested: totalInvestido * 0.98, profit: Math.max(0, totalLucro * 0.70) },
-        { label: 'Fev/26', invested: totalInvestido * 0.99, profit: Math.max(0, totalLucro * 0.85) },
-        { label: 'Mar/26', invested: totalInvestido, profit: Math.max(0, totalLucro) }
+        { label: prevMonth, invested: totalInvestido * 0.985, profit: 0 },
+        { label: curMonth, invested: totalInvestido, profit: Math.max(0, totalLucro) }
       ];
       FinancialCharts.renderStackedEvolutionBars('portfolioEvolutionChartContainer', evolutionData);
     }
   }
 
-  // 3. Atualiza o Título da Seção de Ativos
-  const groupTitle = document.getElementById('portfolioAssetsGroupTitle');
-  if (groupTitle) {
-    groupTitle.textContent = `Meus ativos (${portfolio.length})`;
+  // 3. Gráfico de Rosca "Ativos na Carteira" (Coluna 2)
+  const donutContainer = document.getElementById('portfolioDonutChartContainer');
+  if (donutContainer) {
+    if (totalPatrimonio === 0) {
+      donutContainer.innerHTML = `
+        <div style="text-align: center; padding: 30px 16px; color: var(--text-muted); font-size: 12px;">
+          Nenhum ativo para exibir na alocação.
+        </div>
+      `;
+    } else if (window.FinancialCharts && FinancialCharts.renderDonutChart) {
+      // Agrupa valores por classe para o gráfico de rosca
+      const classTotals = {};
+      portfolio.forEach(item => {
+        const k = item.tipo || 'AÇÃO';
+        classTotals[k] = (classTotals[k] || 0) + (item.valorAtual || 0);
+      });
+
+      const colorDefs = {
+        'RENDA_FIXA': { label: 'Renda Fixa', color: '#7dd3fc' },
+        'FII': { label: 'FIIs', color: '#fde047' },
+        'AÇÃO': { label: 'Ações', color: '#c084fc' },
+        'FIAGRO': { label: 'Fiagros', color: '#34d399' },
+        'CRIPTO': { label: 'Criptos', color: '#f97316' }
+      };
+
+      const donutSlices = Object.entries(classTotals).map(([k, val]) => {
+        const meta = colorDefs[k] || { label: k, color: '#38bdf8' };
+        return {
+          label: meta.label,
+          value: val,
+          color: meta.color
+        };
+      });
+
+      FinancialCharts.renderDonutChart('portfolioDonutChartContainer', donutSlices);
+    }
   }
 
-  // 4. Renderiza os Cards de Grupos de Ativos (Foto 4 do Guilherme)
+  // 4. Seção Meus Ativos Agrupados por Classe (Estilo Investidor 10)
+  const groupTitle = document.getElementById('portfolioAssetsGroupTitle');
+  if (groupTitle) {
+    groupTitle.textContent = `Meus Ativos (${portfolio.length})`;
+  }
+
   const groupsContainer = document.getElementById('portfolioAssetGroupsContainer');
   if (groupsContainer) {
     if (portfolio.length === 0) {
       groupsContainer.innerHTML = `
-        <div style="text-align: center; padding: 40px 20px; background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg);">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); color: var(--emerald-400); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <div style="text-align: center; padding: 48px 20px; background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg);">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); color: var(--emerald-400); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </div>
-          <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Sua carteira está pronta</h3>
-          <p style="font-size: 12.5px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px; line-height: 1.5;">Você não possui nenhum ativo por padrão. Adicione seus CDBs, FIIs ou ações para começar a calcular seus rendimentos reais.</p>
-          <button id="btnEmptyAddAsset" style="padding: 10px 20px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Sua carteira está limpa e pronta</h3>
+          <p style="font-size: 13px; color: var(--text-muted); max-width: 440px; margin: 0 auto 18px; line-height: 1.5;">Você não possui nenhum ativo adicionado. Clique no botão abaixo para adicionar seus CDBs, FIIs ou Ações e calcular seus rendimentos reais.</p>
+          <button onclick="if(window.openAddAssetModalWithCategory) window.openAddAssetModalWithCategory();" style="padding: 10px 22px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>Adicionar Primeiro Ativo</span>
+            <span>+ Adicionar Lançamento</span>
           </button>
         </div>
       `;
-
-      const emptyBtn = document.getElementById('btnEmptyAddAsset');
-      if (emptyBtn && btnOpenModal) {
-        emptyBtn.addEventListener('click', () => btnOpenModal.click());
-      }
       return;
     }
 
-    // Agrupa ativos por classe: FII, RENDA_FIXA, AÇÃO
+    // Agrupa ativos por classe: FII, RENDA_FIXA, AÇÃO, FIAGRO, CRIPTO
     const groups = {};
     portfolio.forEach((item, index) => {
       const typeKey = item.tipo || 'AÇÃO';
@@ -1148,14 +1421,16 @@ function renderPortfolioPage() {
       'FII': 'FIIs',
       'RENDA_FIXA': 'Renda Fixa',
       'AÇÃO': 'Ações',
-      'FIAGRO': 'Fiagros'
+      'FIAGRO': 'Fiagros',
+      'CRIPTO': 'Criptos'
     };
 
     const iconsSvg = {
-      'FII': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>`,
-      'RENDA_FIXA': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
-      'AÇÃO': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>`,
-      'FIAGRO': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`
+      'FII': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>`,
+      'RENDA_FIXA': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>`,
+      'AÇÃO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>`,
+      'FIAGRO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
+      'CRIPTO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
     };
 
     let html = '';
@@ -1165,70 +1440,70 @@ function renderPortfolioPage() {
       const classProfit = classCurrent - classInvested;
       const classRentPct = classInvested > 0 ? ((classProfit / classInvested) * 100) : 0;
       const classWeightPct = totalPatrimonio > 0 ? ((classCurrent / totalPatrimonio) * 100) : 0;
-      const isPositive = classRentPct >= 0;
-
-      // Meta percentual sugerida
+      const isPositive = classProfit >= 0;
       const targetWeight = classKey === 'RENDA_FIXA' ? 80 : (classKey === 'FII' ? 20 : 10);
 
       html += `
-        <div class="portfolio-group-card" onclick="toggleGroupItems('group_details_${classKey}')">
-          <div class="portfolio-group-header">
-            <div class="portfolio-group-title">
-              <div class="portfolio-group-icon">
+        <div class="portfolio-accordion-card" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-card);">
+          
+          <!-- Cabeçalho do Card Sanfona (Idêntico ao Investidor 10 Fotos 2 e 3) -->
+          <div class="portfolio-accordion-header" onclick="toggleAccordion('acc_body_${classKey}')" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--bg-surface-elevated); cursor: pointer; user-select: none; flex-wrap: wrap; gap: 12px;">
+            
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="color: var(--text-muted); opacity: 0.5; font-size: 16px; letter-spacing: -2px;">⋮⋮</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: var(--emerald-400);">
                 ${iconsSvg[classKey] || iconsSvg['AÇÃO']}
               </div>
-              <div>
-                <span>${groupNames[classKey] || classKey}</span>
-                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-left: 4px;">(${items.length})</span>
+              <span style="font-size: 15px; font-weight: 800; color: var(--text-primary);">${groupNames[classKey] || classKey}</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+              <div style="text-align: right;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Ativos</div>
+                <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); font-family: monospace;">${items.length}</div>
               </div>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </div>
 
-          <div class="portfolio-metrics-grid">
-            <div class="portfolio-metric-col">
-              <span class="portfolio-metric-label">Valor total</span>
-              <span class="portfolio-metric-value">R$ ${classCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
+              <div style="text-align: right;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Valor total</div>
+                <div style="font-size: 13px; font-weight: 800; color: var(--text-primary); font-family: monospace;">R$ ${classCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
 
-            <div class="portfolio-metric-col">
-              <span class="portfolio-metric-label">Rentabilidade</span>
-              <span class="portfolio-metric-value" style="color: ${isPositive ? 'var(--emerald-400)' : 'var(--rose-400)'};">
-                ${isPositive ? '+' : ''}${classRentPct.toFixed(2).replace('.', ',')}% ${isPositive ? '↗' : '↘'}
-              </span>
-            </div>
-
-            <div class="portfolio-metric-col">
-              <span class="portfolio-metric-label">Variação</span>
-              <span class="portfolio-metric-value" style="color: ${isPositive ? 'var(--emerald-400)' : 'var(--rose-400)'};">
-                ${isPositive ? '+' : ''}${classRentPct.toFixed(2).replace('.', ',')}% ${isPositive ? '▲' : '▼'}
-              </span>
-            </div>
-
-            <div class="portfolio-metric-col">
-              <span class="portfolio-metric-label">% na Carteira</span>
-              <span class="portfolio-metric-value">${classWeightPct.toFixed(0)}% / ${targetWeight}%</span>
-            </div>
-          </div>
-
-          <!-- Detalhes dos Ativos do Grupo (Expandível) -->
-          <div id="group_details_${classKey}" style="margin-top: 14px; border-top: 1px dashed var(--border-subtle); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-            ${items.map(it => `
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: var(--bg-surface-elevated); border-radius: var(--radius-sm); font-size: 12px;">
-                <div>
-                  <strong style="color: var(--text-primary); font-family: monospace;">${it.ticker}</strong>
-                  <span style="color: var(--text-muted); margin-left: 6px;">${it.nome || ''}</span>
-                  ${it.tipo === 'RENDA_FIXA' ? `<div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">100% do CDI • ${it.businessDays || 0} dias úteis B3 contados</div>` : ''}
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <span style="font-family: monospace; font-weight: 700; color: var(--text-primary);">R$ ${(it.valorAtual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  <button onclick="event.stopPropagation(); removePortfolioItemAt(${it.originalIndex})" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 2px;" title="Remover">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                  </button>
+              <div style="text-align: right;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Variação</div>
+                <div style="font-size: 12px; font-weight: 700; color: ${isPositive ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+                  ${isPositive ? '+' : ''}${classRentPct.toFixed(2).replace('.', ',')}% ${isPositive ? '▲' : '▼'}
                 </div>
               </div>
-            `).join('')}
+
+              <div style="text-align: right;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Rentabilidade</div>
+                <span style="font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${isPositive ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'}; color: ${isPositive ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+                  ${isPositive ? '+' : ''}${classRentPct.toFixed(2).replace('.', ',')}% ↗
+                </span>
+              </div>
+
+              <div style="text-align: right;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">% na carteira</div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); font-family: monospace;">${classWeightPct.toFixed(0)}% / ${targetWeight}%</div>
+              </div>
+
+              <svg id="chevron_acc_body_${classKey}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.5" style="transition: transform 0.2s; transform: rotate(180deg);"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
           </div>
+
+          <!-- Corpo da Tabela Detalhada (Abre por Padrão) -->
+          <div id="acc_body_${classKey}" style="display: block; overflow-x: auto;">
+            ${renderClassTableHtml(classKey, items, totalPatrimonio, targetWeight)}
+            
+            <!-- Barra de Ações Inferior do Card (Idêntico ao Investidor 10) -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 18px; background: var(--bg-surface); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <button onclick="if(window.openAddAssetModalWithCategory) window.openAddAssetModalWithCategory('${classKey}');" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--emerald-400); font-size: 12px; font-weight: 700; border-radius: 4px; cursor: pointer;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Adicionar Lançamento</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       `;
     }
@@ -1237,10 +1512,187 @@ function renderPortfolioPage() {
   }
 }
 
-function toggleGroupItems(id) {
+// Renderiza a tabela interna de cada classe exatamente com as colunas do Investidor 10
+function renderClassTableHtml(classKey, items, totalPatrimonio, targetWeight) {
+  if (classKey === 'RENDA_FIXA') {
+    return `
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; text-transform: uppercase;">
+            <th style="padding: 12px 16px; font-weight: 600;">Ativo</th>
+            <th style="padding: 12px 12px; font-weight: 600;">Variação</th>
+            <th style="padding: 12px 12px; font-weight: 600;">Rentabilidade</th>
+            <th style="padding: 12px 12px; font-weight: 600; text-align: right;">Aplicado</th>
+            <th style="padding: 12px 12px; font-weight: 600; text-align: right;">Saldo</th>
+            <th style="padding: 12px 12px; font-weight: 600;">Data Venc.</th>
+            <th style="padding: 12px 12px; font-weight: 600; text-align: center;">Nota</th>
+            <th style="padding: 12px 12px; font-weight: 600; text-align: center;">% Carteira</th>
+            <th style="padding: 12px 12px; font-weight: 600; text-align: center;">% Ideal</th>
+            <th style="padding: 12px 12px; font-weight: 600; text-align: center;">Comprar?</th>
+            <th style="padding: 12px 16px; font-weight: 600; text-align: center;">Opções</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(it => {
+            const rentPct = it.rentabilidadePct || 0;
+            const isUp = rentPct >= 0;
+            const weight = totalPatrimonio > 0 ? ((it.valorAtual / totalPatrimonio) * 100) : 0;
+            return `
+              <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s;" onmouseover="this.style.background='var(--bg-surface-elevated)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 14px 16px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(59,130,246,0.12); display: flex; align-items: center; justify-content: center; color: var(--blue-400);">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    </div>
+                    <div>
+                      <div style="font-weight: 700; color: var(--text-primary); font-size: 13px;">${it.ticker}</div>
+                      <div style="font-size: 10.5px; color: var(--text-muted);">${it.businessDays ? `${it.businessDays} dias úteis contados` : 'Base 252 dias úteis'}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 14px 12px;">
+                  <span style="font-weight: 700; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+                    ${isUp ? '+' : ''}${rentPct.toFixed(2).replace('.', ',')}% ${isUp ? '▲' : '▼'}
+                  </span>
+                </td>
+                <td style="padding: 14px 12px;">
+                  <span style="font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${isUp ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'}; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+                    ${isUp ? '+' : ''}${rentPct.toFixed(2).replace('.', ',')}% ↗
+                  </span>
+                </td>
+                <td style="padding: 14px 12px; text-align: right; font-family: monospace; font-weight: 600; color: var(--text-secondary);">
+                  R$ ${(it.valorInvestido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+                <td style="padding: 14px 12px; text-align: right; font-family: monospace; font-weight: 700; color: var(--text-primary);">
+                  R$ ${(it.valorAtual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+                <td style="padding: 14px 12px; color: var(--text-muted); font-size: 11.5px;">
+                  ${it.dataVencimento || (it.liquidezDiaria ? 'Liquidez Diária' : 'Liquidez Diária')}
+                </td>
+                <td style="padding: 14px 12px; text-align: center; font-weight: 700; color: var(--text-primary);">10</td>
+                <td style="padding: 14px 12px; text-align: center; font-family: monospace; font-weight: 600; color: var(--text-secondary);">${weight.toFixed(2).replace('.', ',')}%</td>
+                <td style="padding: 14px 12px; text-align: center; font-family: monospace; font-weight: 600; color: var(--text-muted);">${targetWeight},00%</td>
+                <td style="padding: 14px 12px; text-align: center;">
+                  <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted);">Não</span>
+                </td>
+                <td style="padding: 14px 16px; text-align: center;">
+                  <button onclick="removePortfolioItemAt(${it.originalIndex})" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 4px;" title="Excluir Ativo">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // FIIs, Ações, Fiagros
+  return `
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; text-transform: uppercase;">
+          <th style="padding: 12px 16px; font-weight: 600;">Ativo</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">Quant.</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">Tipo</th>
+          <th style="padding: 12px 12px; font-weight: 600; text-align: right;">Preço Médio</th>
+          <th style="padding: 12px 12px; font-weight: 600; text-align: right;">Preço Atual</th>
+          <th style="padding: 12px 10px; font-weight: 600;">Variação</th>
+          <th style="padding: 12px 10px; font-weight: 600;">Rentabilidade</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: right;">Últ. Rend.</th>
+          <th style="padding: 12px 12px; font-weight: 600; text-align: right;">Saldo</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: right;">Prov. Rec.</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">P/VP</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">Nota</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">% Cart.</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">% Ideal</th>
+          <th style="padding: 12px 10px; font-weight: 600; text-align: center;">Comprar?</th>
+          <th style="padding: 12px 16px; font-weight: 600; text-align: center;">Opções</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(it => {
+          const rentPct = it.rentabilidadePct || 0;
+          const isUp = rentPct >= 0;
+          const weight = totalPatrimonio > 0 ? ((it.valorAtual / totalPatrimonio) * 100) : 0;
+          const qty = it.quantidade || 1;
+          const pm = it.precoMedio || ((it.valorInvestido || 0) / qty);
+          const pa = it.cotacaoAtual || pm;
+          const varPct = pm > 0 ? (((pa - pm) / pm) * 100) : 0;
+          const isVarUp = varPct >= 0;
+
+          return `
+            <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s;" onmouseover="this.style.background='var(--bg-surface-elevated)'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 14px 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 26px; height: 26px; border-radius: 4px; background: rgba(253, 224, 71, 0.12); display: flex; align-items: center; justify-content: center; color: #fde047; font-weight: 800; font-size: 10px;">
+                    ${it.tipo === 'FII' ? 'FII' : 'AÇÃO'}
+                  </div>
+                  <div>
+                    <div style="font-weight: 800; color: var(--text-primary); font-family: monospace; font-size: 13px;">${it.ticker}</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">${it.nome || ''}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding: 14px 10px; text-align: center; font-family: monospace; font-weight: 700; color: var(--text-primary);">${qty}</td>
+              <td style="padding: 14px 10px; text-align: center;">
+                <span style="font-size: 10px; font-weight: 700; background: var(--bg-surface-elevated); padding: 2px 6px; border-radius: 3px; color: var(--text-secondary);">${it.tipo}</span>
+              </td>
+              <td style="padding: 14px 12px; text-align: right; font-family: monospace; color: var(--text-secondary);">
+                R$ ${pm.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td style="padding: 14px 12px; text-align: right; font-family: monospace; font-weight: 700; color: var(--text-primary);">
+                R$ ${pa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td style="padding: 14px 10px;">
+                <span style="font-weight: 700; color: ${isVarUp ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+                  ${isVarUp ? '+' : ''}${varPct.toFixed(2).replace('.', ',')}% ${isVarUp ? '▲' : '▼'}
+                </span>
+              </td>
+              <td style="padding: 14px 10px;">
+                <span style="font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${isUp ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'}; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+                  ${isUp ? '+' : ''}${rentPct.toFixed(2).replace('.', ',')}% ↗
+                </span>
+              </td>
+              <td style="padding: 14px 10px; text-align: right; font-family: monospace; color: var(--text-secondary);">
+                R$ ${(it.ultimoRendimento || 0.10).toFixed(2).replace('.', ',')}
+              </td>
+              <td style="padding: 14px 12px; text-align: right; font-family: monospace; font-weight: 700; color: var(--text-primary);">
+                R$ ${(it.valorAtual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td style="padding: 14px 10px; text-align: right; font-family: monospace; color: var(--text-muted);">
+                R$ 0,00
+              </td>
+              <td style="padding: 14px 10px; text-align: center; font-family: monospace; color: var(--text-secondary);">${(it.pvp || 0.96).toFixed(2).replace('.', ',')}</td>
+              <td style="padding: 14px 10px; text-align: center; font-weight: 700; color: var(--text-primary);">10</td>
+              <td style="padding: 14px 10px; text-align: center; font-family: monospace; font-weight: 600; color: var(--text-secondary);">${weight.toFixed(2).replace('.', ',')}%</td>
+              <td style="padding: 14px 10px; text-align: center; font-family: monospace; font-weight: 600; color: var(--text-muted);">${targetWeight},00%</td>
+              <td style="padding: 14px 10px; text-align: center;">
+                <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(16,185,129,0.15); color: var(--emerald-400);">Sim</span>
+              </td>
+              <td style="padding: 14px 16px; text-align: center;">
+                <button onclick="removePortfolioItemAt(${it.originalIndex})" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 4px;" title="Excluir Ativo">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function toggleAccordion(id) {
   const el = document.getElementById(id);
+  const chevron = document.getElementById('chevron_' + id);
   if (el) {
-    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+    const isHidden = el.style.display === 'none';
+    el.style.display = isHidden ? 'block' : 'none';
+    if (chevron) {
+      chevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
   }
 }
 
@@ -1256,7 +1708,7 @@ function removePortfolioItemAt(index) {
   }
 }
 
-window.toggleGroupItems = toggleGroupItems;
+window.toggleAccordion = toggleAccordion;
 window.removePortfolioItemAt = removePortfolioItemAt;
 
 // ==========================================================================

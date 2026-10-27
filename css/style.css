@@ -1623,5 +1623,32 @@ body {
   }
 }
 
+/* ==========================================================================
+   ESTILOS ADICIONAIS: CARTEIRA INVESTIDOR 10 & MODAL DE LANÇAMENTO
+   ========================================================================== */
+.switch input:checked + .slider {
+  background-color: var(--emerald-500);
+}
+.switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .25s ease;
+}
+
+@media (max-width: 991px) {
+  .wallet-middle-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
 
