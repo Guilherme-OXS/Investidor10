@@ -1,0 +1,8 @@
+# Logs e temporários
+*.log
+.probe
+Thumbs.db
+.DS_Store
+
+# Vercel
+.vercel
