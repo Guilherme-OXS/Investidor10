@@ -1,11 +1,11 @@
 {
-  "name": "Investidor 10X - Análise B3 & FIIs",
-  "short_name": "Investidor10X",
-  "description": "Plataforma avançada de análise fundamentalista, valuation inteligente e carteira de ativos B3",
+  "name": "InvestLucro - Inteligência & Análise B3",
+  "short_name": "InvestLucro",
+  "description": "Terminal financeiro profissional de análise fundamentalista de Ações, FIIs e gestão de carteira sem ruído publicitário",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0e17",
-  "theme_color": "#0b0e17",
+  "background_color": "#080a11",
+  "theme_color": "#080a11",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -29,14 +29,14 @@
   "categories": ["finance", "productivity"],
   "shortcuts": [
     {
-      "name": "Radar de Dividendos",
-      "url": "/#radar",
-      "description": "Acesse as maiores pagadoras de dividendos da B3"
+      "name": "Radar & Screener",
+      "url": "/radar",
+      "description": "Filtros fundamentalistas de ações e FIIs"
     },
     {
       "name": "Minha Carteira",
-      "url": "/#carteira",
-      "description": "Acompanhe seus rendimentos e ativos"
+      "url": "/carteira",
+      "description": "Gestão de patrimônio e rentabilidade"
     }
   ]
 }

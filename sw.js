@@ -1,5 +1,5 @@
-// Investidor 10X - Service Worker de Alta Performance PWA (Parte 4 - Multi-Páginas)
-const CACHE_NAME = 'investidor10x-v4.0.0';
+// InvestLucro - Service Worker de Alta Performance PWA (Parte 5 - FIIs & Mobile Fix)
+const CACHE_NAME = 'investlucro-v5.0.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

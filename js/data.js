@@ -825,5 +825,40 @@ function getAssetHistoricalData(ticker) {
   return { priceHistory, dividendHistory };
 }
 
-window.getAssetHistoricalData = getAssetHistoricalData;
+/**
+ * PARTE 5: Cálculo de Preço Teto e Valuation Específico para Fundos Imobiliários e Fiagros
+ * Utiliza o Spread Real sobre o Tesouro IPCA+ (NTN-B) e o rendimento mensal recorrente
+ */
+function calculateFIICeiling(asset, targetSpread = 2.5) {
+  if (!asset || (asset.type !== 'FII' && asset.type !== 'FIAGRO')) return null;
+
+  const dyDecimal = parseFloat(asset.dy.replace('%', '')) / 100;
+  const annualIncome = asset.price * dyDecimal;
+
+  // Taxa de referência: Tesouro IPCA+ 2035 (aprox 6.25% a.a.) + Prêmio de Risco do Segmento
+  const baseRate = 0.0625;
+  const riskPremium = (targetSpread || 2.5) / 100;
+  const fairRate = baseRate + riskPremium; // ex: 8.75% a.a.
+
+  const ceilingPrice = annualIncome / fairRate;
+  const marginPct = ((ceilingPrice / asset.price) - 1) * 100;
+
+  return {
+    fairRatePct: (fairRate * 100).toFixed(2),
+    ceilingPrice: parseFloat(ceilingPrice.toFixed(2)),
+    marginPct: parseFloat(marginPct.toFixed(1)),
+    isDiscounted: marginPct > 0,
+    status: marginPct > 10 ? 'Excelente Oportunidade' : marginPct > 0 ? 'Abaixo do Preço Teto' : 'Com Ágio (Preço Esticado)'
+  };
+}
+
+// Exportações explícitas para o escopo global
+if (typeof window !== 'undefined') {
+  window.MARKET_INDICES = MARKET_INDICES;
+  window.ASSETS_DATA = ASSETS_DATA;
+  window.INITIAL_USER_PORTFOLIO = INITIAL_USER_PORTFOLIO;
+  window.getAssetHistoricalData = getAssetHistoricalData;
+  window.calculateFIICeiling = calculateFIICeiling;
+}
+
 

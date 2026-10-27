@@ -206,6 +206,16 @@ function initGlobalSearch() {
   }
 }
 
+function getAssetsData() {
+  return (typeof ASSETS_DATA !== 'undefined' ? ASSETS_DATA : window.ASSETS_DATA) || [];
+}
+function getIndicesData() {
+  return (typeof MARKET_INDICES !== 'undefined' ? MARKET_INDICES : window.MARKET_INDICES) || [];
+}
+function getNewsData() {
+  return (typeof MARKET_NEWS !== 'undefined' ? MARKET_NEWS : window.MARKET_NEWS) || [];
+}
+
 // ==========================================================================
 // ABA 1: PANORAMA DO MERCADO (HOME / INDEX.HTML)
 // ==========================================================================
@@ -214,10 +224,14 @@ function initHomePage() {
 }
 
 function renderHomeDashboard() {
+  const allIndices = getIndicesData();
+  const allAssets = getAssetsData();
+  const allNews = getNewsData();
+
   // 1. Grade de Índices Macro
   const indicesGrid = document.getElementById('homeIndicesGrid');
-  if (indicesGrid && window.MARKET_INDICES) {
-    indicesGrid.innerHTML = MARKET_INDICES.map(idx => {
+  if (indicesGrid && allIndices.length > 0) {
+    indicesGrid.innerHTML = allIndices.map(idx => {
       const isUp = idx.change.startsWith('+');
       return `
         <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; box-shadow: var(--shadow-card);">
@@ -233,8 +247,8 @@ function renderHomeDashboard() {
 
   // 2. Maiores Pagadoras de Proventos (sem yield trap!)
   const highDyList = document.getElementById('homeHighDyList');
-  if (highDyList && window.ASSETS_DATA) {
-    const topDy = [...ASSETS_DATA]
+  if (highDyList && allAssets.length > 0) {
+    const topDy = [...allAssets]
       .filter(a => !a.yield_trap_alert)
       .sort((a, b) => parseFloat(b.dy.replace('%', '')) - parseFloat(a.dy.replace('%', '')))
       .slice(0, 4);
@@ -258,8 +272,8 @@ function renderHomeDashboard() {
 
   // 3. Alta Rentabilidade (ROE Consistente)
   const highRoeList = document.getElementById('homeHighRoeList');
-  if (highRoeList && window.ASSETS_DATA) {
-    const topRoe = [...ASSETS_DATA]
+  if (highRoeList && allAssets.length > 0) {
+    const topRoe = [...allAssets]
       .filter(a => a.roe && a.type === 'AÇÃO')
       .sort((a, b) => parseFloat(b.roe.replace('%', '')) - parseFloat(a.roe.replace('%', '')))
       .slice(0, 4);
@@ -382,10 +396,11 @@ function renderAssets() {
   const grid = document.getElementById('assetsGrid');
   const tableBody = document.getElementById('assetsTableBody');
   const countBadge = document.getElementById('assetCountBadge');
-  if (!window.ASSETS_DATA) return;
+  const allAssets = getAssetsData();
+  if (allAssets.length === 0) return;
 
   // Filtragem Inteligente
-  const filtered = ASSETS_DATA.filter(asset => {
+  const filtered = allAssets.filter(asset => {
     // 1. Busca por texto
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -395,7 +410,7 @@ function renderAssets() {
       if (!match) return false;
     }
 
-    // 2. Presets do Screener
+    // 2. Presets do Screener (Incluindo PARTE 5 para FIIs)
     if (currentPreset === 'magic') {
       const roeNum = asset.roe ? parseFloat(asset.roe.replace('%', '')) : 0;
       return asset.pl_contabil && asset.pl_contabil <= 10.0 && roeNum >= 18.0;
@@ -406,6 +421,12 @@ function renderAssets() {
     }
     if (currentPreset === 'cheap-fiis') {
       return (asset.type === 'FII' || asset.type === 'FIAGRO') && asset.pvp < 1.00 && !asset.yield_trap_alert;
+    }
+    if (currentPreset === 'tijolo-prime') {
+      return asset.type === 'FII' && (asset.sector || '').includes('Tijolo') && parseFloat(asset.vacancia_fisica || '99') < 6.0 && asset.pvp <= 1.05;
+    }
+    if (currentPreset === 'papel-highgrade') {
+      return (asset.type === 'FII' || asset.type === 'FIAGRO') && !asset.yield_trap_alert && !(asset.sector || '').includes('Tijolo');
     }
     if (currentPreset === 'cash') {
       return asset.divida_liquida_ebitda !== undefined && asset.divida_liquida_ebitda <= 0;
@@ -430,7 +451,7 @@ function renderAssets() {
   });
 
   if (countBadge) {
-    countBadge.textContent = `Mostrando ${filtered.length} de ${ASSETS_DATA.length} ativos`;
+    countBadge.textContent = `Mostrando ${filtered.length} de ${allAssets.length} ativos`;
   }
 
   // Renderiza no Grid de Cards
@@ -1109,22 +1130,49 @@ function openAssetModal(ticker) {
       </div>
     `;
   } else {
+    // PARTE 5: Valuation Profissional de FIIs & Fiagros (Spread s/ Tesouro IPCA+ e Vacância Real)
+    const fiiCeiling = (window.calculateFIICeiling ? window.calculateFIICeiling(asset, 2.5) : null) || {
+      ceilingPrice: asset.price * 1.06,
+      marginPct: 6.0,
+      isDiscounted: true,
+      status: 'Abaixo do Preço Teto'
+    };
+
     valuationCards = `
       <div class="valuation-box-grid">
         <div class="val-card">
-          <div class="val-card-title">Valor Patrimonial da Cota (VP)</div>
-          <div class="val-card-price">R$ ${asset.vp_cota.toFixed(2)}</div>
-          <div class="val-card-note">Valor real dos ativos físicos/títulos divididos pelo número de cotas.</div>
+          <div class="val-card-title">Preço Teto FII (Spread IPCA+ 2.5%)</div>
+          <div class="val-card-price" id="modalFiiCeilingPrice">R$ ${fiiCeiling.ceilingPrice.toFixed(2)}</div>
+          <div style="margin-top: 6px;">
+            <span class="safety-margin-badge ${fiiCeiling.isDiscounted ? 'positive' : 'negative'}" id="modalFiiSafetyBadge">
+              ${fiiCeiling.isDiscounted ? '▲ +' : '▼ '}${fiiCeiling.marginPct}% de Margem
+            </span>
+          </div>
+          <div class="val-card-note" id="modalFiiCeilingNote">${fiiCeiling.status}</div>
         </div>
         <div class="val-card">
-          <div class="val-card-title">P/VP Real</div>
-          <div class="val-card-price ${asset.pvp < 1 ? 'highlight' : ''}">${asset.pvp}</div>
-          <div class="val-card-note">${asset.pvp < 1 ? 'Negociando com desconto sobre o patrimônio físico.' : 'Negociando com ágio sobre o patrimônio.'}</div>
+          <div class="val-card-title">P/VP Real s/ Laudo Físico</div>
+          <div class="val-card-price ${asset.pvp < 1 ? 'highlight' : ''}">${asset.pvp} <span style="font-size: 13px; color: var(--text-muted); font-weight: normal;">(VP R$ ${asset.vp_cota.toFixed(2)})</span></div>
+          <div class="val-card-note">${asset.pvp < 1 ? `Desconto de ${((1 - asset.pvp) * 100).toFixed(1)}% sobre o patrimônio físico.` : 'Negociando com ágio sobre o laudo contábil.'}</div>
         </div>
         <div class="val-card">
-          <div class="val-card-title">Rendimento Médio Mensal</div>
-          <div class="val-card-price">${asset.rendimento_medio_mes}</div>
-          <div class="val-card-note">${asset.yieldTrapReason || 'Rendimento consistente com proventos isentos de IR.'}</div>
+          <div class="val-card-title">${asset.vacancia_fisica ? 'Vacância Física vs Financeira' : 'Indexador & Risco'}</div>
+          <div class="val-card-price">${asset.vacancia_fisica ? `${asset.vacancia_fisica} / ${asset.vacancia_financeira || '0%'}` : (asset.indexador_principal || 'IPCA / CDI')}</div>
+          <div class="val-card-note">${asset.vacancia_fisica ? 'Imóveis alugados gerando aluguel regular.' : (asset.yieldTrapReason || 'Carteira de CRIs/CRAs com garantias reais.')}</div>
+        </div>
+      </div>
+
+      <!-- Slider Interativo de Spread de Risco para FIIs (Parte 5) -->
+      <div class="bazin-slider-box">
+        <div class="bazin-slider-header">
+          <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary);">Prêmio de Risco sobre NTN-B Desejado:</span>
+          <span style="font-size: 14px; font-weight: 800; font-family: monospace; color: var(--emerald-400);" id="fiiSpreadLabel">+2.50% a.a.</span>
+        </div>
+        <input type="range" class="bazin-range-input" id="fiiSpreadSlider" min="1.0" max="5.0" step="0.25" value="2.5" oninput="updateFiiSpreadSlider('${asset.ticker}', this.value)">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+          <span>+1.0% (Tijolo AAA)</span>
+          <span>+2.5% (Padrão de Mercado)</span>
+          <span>+5.0% (Crédito High Yield)</span>
         </div>
       </div>
     `;
@@ -1231,6 +1279,29 @@ function updateBazinSlider(ticker, yieldVal) {
   }
 }
 
+function updateFiiSpreadSlider(ticker, spreadVal) {
+  const allAssets = getAssetsData();
+  const asset = allAssets.find(a => a.ticker === ticker);
+  if (!asset || !window.calculateFIICeiling) return;
+
+  const result = window.calculateFIICeiling(asset, parseFloat(spreadVal));
+  if (!result) return;
+
+  const label = document.getElementById('fiiSpreadLabel');
+  const price = document.getElementById('modalFiiCeilingPrice');
+  const badge = document.getElementById('modalFiiSafetyBadge');
+  const note = document.getElementById('modalFiiCeilingNote');
+
+  if (label) label.textContent = `+${parseFloat(spreadVal).toFixed(2)}% a.a.`;
+  if (price) price.textContent = `R$ ${result.ceilingPrice.toFixed(2)}`;
+  if (note) note.textContent = result.status;
+
+  if (badge) {
+    badge.className = `safety-margin-badge ${result.isDiscounted ? 'positive' : 'negative'}`;
+    badge.textContent = `${result.isDiscounted ? '▲ +' : '▼ '}${result.marginPct}% de Margem`;
+  }
+}
+
 function closeAssetModal() {
   const modal = document.getElementById('assetModal');
   if (modal) {
@@ -1244,6 +1315,8 @@ function closeAssetModal() {
 window.openAssetModal = openAssetModal;
 window.closeAssetModal = closeAssetModal;
 window.updateBazinSlider = updateBazinSlider;
+window.updateFiiSpreadSlider = updateFiiSpreadSlider;
 window.addCompareTicker = addCompareTicker;
 window.removeCompareTicker = removeCompareTicker;
 window.removePortfolioItem = removePortfolioItem;
+
