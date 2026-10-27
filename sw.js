@@ -1,5 +1,5 @@
-// InvestLucro - Service Worker de Alta Performance PWA (Parte 5.3 - Serverless APIs & Real Data)
-const CACHE_NAME = 'investlucro-v5.3.0';
+// InvestLucro - Service Worker de Alta Performance PWA (Parte 5.5 - 12 Categorias, Catálogo Amplo e Abas Interativas)
+const CACHE_NAME = 'investlucro-v5.5.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

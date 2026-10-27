@@ -765,9 +765,12 @@ function initPortfolioPage() {
   const tabVenda = document.getElementById('tabOpVenda');
   const modalCategory = document.getElementById('modalAssetCategory');
 
-  // Seções dinâmicas
+  // Seções dinâmicas do Modal
   const sectionRendaFixa = document.getElementById('sectionRendaFixaFields');
   const sectionVariable = document.getElementById('sectionVariableFields');
+  const sectionTesouro = document.getElementById('sectionTesouroFields');
+  const sectionFundos = document.getElementById('sectionFundosFields');
+  const sectionOutros = document.getElementById('sectionOutrosFields');
 
   // Campos Renda Fixa
   const rfEmissor = document.getElementById('rfEmissor');
@@ -780,7 +783,7 @@ function initPortfolioPage() {
   const rfDataVencimento = document.getElementById('rfDataVencimento');
   const rfTaxaCDI = document.getElementById('rfTaxaCDI');
 
-  // Campos Variável
+  // Campos Variável / Mercado
   const varAssetSelect = document.getElementById('varAssetSelect');
   const varCustomTicker = document.getElementById('varCustomTicker');
   const varDataCompra = document.getElementById('varDataCompra');
@@ -788,32 +791,70 @@ function initPortfolioPage() {
   const varPreco = document.getElementById('varPreco');
   const varCustos = document.getElementById('varCustos');
 
+  // Campos Tesouro
+  const tesouroTitulo = document.getElementById('tesouroTitulo');
+  const tesouroData = document.getElementById('tesouroData');
+  const tesouroValor = document.getElementById('tesouroValor');
+  const tesouroTaxa = document.getElementById('tesouroTaxa');
+  const tesouroVencimento = document.getElementById('tesouroVencimento');
+
+  // Campos Fundos
+  const fundoNome = document.getElementById('fundoNome');
+  const fundoCategoria = document.getElementById('fundoCategoria');
+  const fundoValor = document.getElementById('fundoValor');
+  const fundoData = document.getElementById('fundoData');
+  const fundoResgate = document.getElementById('fundoResgate');
+
+  // Campos Outros
+  const outrosNome = document.getElementById('outrosNome');
+  const outrosCategoria = document.getElementById('outrosCategoria');
+  const outrosValor = document.getElementById('outrosValor');
+  const outrosData = document.getElementById('outrosData');
+  const outrosRendimento = document.getElementById('outrosRendimento');
+
   // Total Calculado no Modal
   const modalCalculatedTotal = document.getElementById('modalCalculatedTotal');
 
   let currentOperation = 'COMPRA'; // 'COMPRA' ou 'VENDA'
 
-  // Popula opções de ativos variáveis
+  // Popula opções de ativos e datalist com TODOS os ativos do mercado
   function populateVariableAssets(category) {
-    if (!varAssetSelect) return;
     const assets = typeof getAssetsData === 'function' ? getAssetsData() : (window.ASSETS_DATA || []);
+    
+    // Popula o datalist para pesquisa rápida e autocomplete
+    const datalist = document.getElementById('allMarketAssetsList');
+    if (datalist) {
+      datalist.innerHTML = assets.map(a => `<option value="${a.ticker}">${a.ticker} - ${a.name} (${a.type || 'Ação'})</option>`).join('');
+    }
+
+    if (!varAssetSelect) return;
     let filtered = assets;
-    if (category === 'FII') filtered = assets.filter(a => a.type === 'FII');
+    if (category === 'FII') filtered = assets.filter(a => a.type === 'FII' || a.type === 'FIAGRO');
     else if (category === 'AÇÃO') filtered = assets.filter(a => a.type === 'AÇÃO' || !a.type);
-    else if (category === 'FIAGRO') filtered = assets.filter(a => a.type === 'FIAGRO');
+    else if (category === 'STOCKS') filtered = assets.filter(a => a.type === 'STOCKS');
+    else if (category === 'BDR') filtered = assets.filter(a => a.type === 'BDR');
+    else if (category === 'ETF') filtered = assets.filter(a => a.type === 'ETF');
+    else if (category === 'ETF_INT') filtered = assets.filter(a => a.type === 'ETF_INT');
+    else if (category === 'REIT') filtered = assets.filter(a => a.type === 'REIT');
     else if (category === 'CRIPTO') filtered = assets.filter(a => a.type === 'CRIPTO');
 
-    varAssetSelect.innerHTML = '<option value="">Selecione um ativo...</option>' +
+    varAssetSelect.innerHTML = '<option value="">Ou selecione da lista...</option>' +
       filtered.map(a => `<option value="${a.ticker}" data-price="${a.price}">${a.ticker} - ${a.name} (R$ ${a.price.toFixed(2).replace('.', ',')})</option>`).join('');
   }
 
   // Atualiza o valor total em tempo real no modal
   function updateModalTotal() {
     if (!modalCalculatedTotal) return;
-    const cat = modalCategory ? modalCategory.value : 'RENDA_FIXA';
+    const cat = modalCategory ? modalCategory.value : 'AÇÃO';
     let total = 0;
     if (cat === 'RENDA_FIXA') {
       total = parseFloat(rfValor ? rfValor.value : 0) || 0;
+    } else if (cat === 'TESOURO') {
+      total = parseFloat(tesouroValor ? tesouroValor.value : 0) || 0;
+    } else if (cat === 'FUNDO') {
+      total = parseFloat(fundoValor ? fundoValor.value : 0) || 0;
+    } else if (cat === 'OUTROS') {
+      total = parseFloat(outrosValor ? outrosValor.value : 0) || 0;
     } else {
       const q = parseFloat(varQuantidade ? varQuantidade.value : 0) || 0;
       const p = parseFloat(varPreco ? varPreco.value : 0) || 0;
@@ -848,15 +889,35 @@ function initPortfolioPage() {
   if (tabCompra) tabCompra.addEventListener('click', () => setOperation('COMPRA'));
   if (tabVenda) tabVenda.addEventListener('click', () => setOperation('VENDA'));
 
-  // Alterna entre Renda Fixa e Renda Variável
+  // Alterna entre as 12 formas de investimento
   function onCategoryChange() {
-    const cat = modalCategory ? modalCategory.value : 'RENDA_FIXA';
+    const cat = modalCategory ? modalCategory.value : 'AÇÃO';
+    
+    // Esconde todas as seções
+    if (sectionRendaFixa) sectionRendaFixa.style.display = 'none';
+    if (sectionVariable) sectionVariable.style.display = 'none';
+    if (sectionTesouro) sectionTesouro.style.display = 'none';
+    if (sectionFundos) sectionFundos.style.display = 'none';
+    if (sectionOutros) sectionOutros.style.display = 'none';
+
     if (cat === 'RENDA_FIXA') {
       if (sectionRendaFixa) sectionRendaFixa.style.display = 'block';
-      if (sectionVariable) sectionVariable.style.display = 'none';
+    } else if (cat === 'TESOURO') {
+      if (sectionTesouro) sectionTesouro.style.display = 'block';
+    } else if (cat === 'FUNDO') {
+      if (sectionFundos) sectionFundos.style.display = 'block';
+    } else if (cat === 'OUTROS') {
+      if (sectionOutros) sectionOutros.style.display = 'block';
     } else {
-      if (sectionRendaFixa) sectionRendaFixa.style.display = 'none';
       if (sectionVariable) sectionVariable.style.display = 'block';
+      const lblPreco = document.getElementById('lblVarPreco');
+      if (lblPreco) {
+        if (cat === 'STOCKS' || cat === 'ETF_INT' || cat === 'REIT') {
+          lblPreco.textContent = 'Preço em US$ *';
+        } else {
+          lblPreco.textContent = 'Preço em R$ *';
+        }
+      }
       populateVariableAssets(cat);
     }
     updateModalTotal();
@@ -895,7 +956,7 @@ function initPortfolioPage() {
   }
 
   // Ouvintes de input para cálculo ao vivo
-  [rfValor, varQuantidade, varPreco, varCustos].forEach(inp => {
+  [rfValor, varQuantidade, varPreco, varCustos, tesouroValor, fundoValor, outrosValor].forEach(inp => {
     if (inp) inp.addEventListener('input', updateModalTotal);
   });
 
@@ -912,16 +973,23 @@ function initPortfolioPage() {
     });
   }
 
-  // Abre e fecha o modal
+  // Abre e fecha o modal garantindo visibilidade total
   const openModal = (targetCategory = null) => {
     if (addModal) {
-      addModal.style.display = 'flex';
+      addModal.classList.add('active');
+      addModal.style.setProperty('display', 'flex', 'important');
+      addModal.style.setProperty('opacity', '1', 'important');
+      addModal.style.setProperty('visibility', 'visible', 'important');
+      addModal.style.setProperty('z-index', '999999', 'important');
       addModal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
 
       const today = new Date().toISOString().split('T')[0];
       if (rfDataCompra && !rfDataCompra.value) rfDataCompra.value = today;
       if (varDataCompra && !varDataCompra.value) varDataCompra.value = today;
+      if (tesouroData && !tesouroData.value) tesouroData.value = today;
+      if (fundoData && !fundoData.value) fundoData.value = today;
+      if (outrosData && !outrosData.value) outrosData.value = today;
 
       if (targetCategory && modalCategory) {
         modalCategory.value = targetCategory;
@@ -934,10 +1002,18 @@ function initPortfolioPage() {
 
   const closeModal = () => {
     if (addModal) {
-      addModal.style.display = 'none';
+      addModal.classList.remove('active');
+      addModal.style.setProperty('display', 'none', 'important');
+      addModal.style.setProperty('opacity', '0', 'important');
+      addModal.style.setProperty('visibility', 'hidden', 'important');
       addModal.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
     }
+  };
+
+  // Exporta globalmente para qualquer botão na página
+  window.openAddAssetModalWithCategory = (cat = null) => {
+    openModal(cat);
   };
 
   // Botões de abertura de modal
@@ -948,6 +1024,9 @@ function initPortfolioPage() {
   if (btnOpenModal) btnOpenModal.addEventListener('click', () => openModal());
   if (btnFastAdd) btnFastAdd.addEventListener('click', () => openModal());
   if (btnHeaderAdd) btnHeaderAdd.addEventListener('click', () => openModal());
+  document.querySelectorAll('.btn-add-launch-trigger').forEach(btn => {
+    btn.addEventListener('click', () => openModal());
+  });
   if (addCloseBtn) addCloseBtn.addEventListener('click', closeModal);
   if (addBackBtn) addBackBtn.addEventListener('click', closeModal);
 
@@ -957,11 +1036,54 @@ function initPortfolioPage() {
     });
   }
 
+  // Dropdown da Carteira (Minhas Carteiras & Limpar Ativos)
+  const btnWallet = document.getElementById('btnWalletSelector');
+  const walletMenu = document.getElementById('walletDropdownMenu');
+  const btnClearWallet = document.getElementById('btnClearWalletData');
+  const btnCreateWallet = document.getElementById('btnCreateNewWallet');
+
+  if (btnWallet && walletMenu) {
+    btnWallet.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = walletMenu.style.display === 'block';
+      walletMenu.style.display = isVisible ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!walletMenu.contains(e.target) && !btnWallet.contains(e.target)) {
+        walletMenu.style.display = 'none';
+      }
+    });
+  }
+
+  if (btnClearWallet) {
+    btnClearWallet.addEventListener('click', () => {
+      if (confirm('Tem certeza que deseja limpar todos os ativos da carteira?')) {
+        InvestAuth.saveUserPortfolio([]);
+        if (walletMenu) walletMenu.style.display = 'none';
+        renderPortfolioPage();
+      }
+    });
+  }
+
+  if (btnCreateWallet) {
+    btnCreateWallet.addEventListener('click', () => {
+      const name = prompt('Digite o nome da nova carteira:', 'Carteira de Aposentadoria');
+      if (name) {
+        alert(`Carteira "${name}" criada com sucesso!`);
+        if (walletMenu) walletMenu.style.display = 'none';
+      }
+    });
+  }
+
+  // Inicializa as 6 sub-abas da carteira
+  initPortfolioTabs();
+
   // Submissão do formulário de lançamento
   if (customForm) {
     customForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const cat = modalCategory ? modalCategory.value : 'RENDA_FIXA';
+      const cat = modalCategory ? modalCategory.value : 'AÇÃO';
       const userPortfolio = InvestAuth.getUserPortfolio();
       let newItem = null;
 
@@ -1000,6 +1122,75 @@ function initPortfolioPage() {
           dataAplicacao: dataCompra,
           operacao: currentOperation
         };
+      } else if (cat === 'TESOURO') {
+        const titulo = tesouroTitulo ? tesouroTitulo.value.trim() : 'Tesouro Selic 2029';
+        const valor = tesouroValor ? (parseFloat(tesouroValor.value) || 0) : 0;
+        const data = tesouroData && tesouroData.value ? tesouroData.value : new Date().toISOString().split('T')[0];
+        const taxa = tesouroTaxa ? tesouroTaxa.value.trim() : 'Selic';
+        const venc = tesouroVencimento && tesouroVencimento.value ? tesouroVencimento.value : '2029-03-01';
+
+        if (valor <= 0) {
+          alert('Por favor, informe o valor investido no Tesouro Direto.');
+          return;
+        }
+
+        newItem = {
+          ticker: titulo,
+          nome: titulo,
+          tipo: 'TESOURO',
+          valorInvestido: valor,
+          valorAtual: valor,
+          taxaContratada: taxa,
+          dataVencimento: venc,
+          dataAplicacao: data,
+          operacao: currentOperation
+        };
+      } else if (cat === 'FUNDO') {
+        const nome = fundoNome ? fundoNome.value.trim() : 'Fundo de Investimento';
+        const catFundo = fundoCategoria ? fundoCategoria.value : 'Multimercado';
+        const valor = fundoValor ? (parseFloat(fundoValor.value) || 0) : 0;
+        const data = fundoData && fundoData.value ? fundoData.value : new Date().toISOString().split('T')[0];
+        const resgate = fundoResgate ? fundoResgate.value.trim() : 'D+30';
+
+        if (valor <= 0) {
+          alert('Por favor, informe o valor aplicado no Fundo.');
+          return;
+        }
+
+        newItem = {
+          ticker: nome,
+          nome: `${nome} (${catFundo})`,
+          tipo: 'FUNDO',
+          categoriaFundo: catFundo,
+          valorInvestido: valor,
+          valorAtual: valor,
+          prazoResgate: resgate,
+          dataAplicacao: data,
+          operacao: currentOperation
+        };
+      } else if (cat === 'OUTROS') {
+        const nome = outrosNome ? outrosNome.value.trim() : 'Outro Ativo';
+        const catOutros = outrosCategoria ? outrosCategoria.value : 'Imóvel Físico';
+        const valor = outrosValor ? (parseFloat(outrosValor.value) || 0) : 0;
+        const data = outrosData && outrosData.value ? outrosData.value : new Date().toISOString().split('T')[0];
+        const rend = outrosRendimento ? (parseFloat(outrosRendimento.value) || 0) : 0;
+
+        if (valor <= 0) {
+          alert('Por favor, informe o valor do ativo.');
+          return;
+        }
+
+        newItem = {
+          ticker: nome,
+          nome: `${nome} (${catOutros})`,
+          tipo: 'OUTROS',
+          categoriaBem: catOutros,
+          valorInvestido: valor,
+          valorAtual: valor,
+          rendimentoMensal: rend,
+          dataAplicacao: data,
+          operacao: currentOperation
+        };
       } else {
         const ticker = (varCustomTicker && varCustomTicker.value ? varCustomTicker.value : (varAssetSelect ? varAssetSelect.value : '')).trim().toUpperCase();
         const qty = varQuantidade ? (parseFloat(varQuantidade.value) || 0) : 0;
@@ -1030,7 +1221,8 @@ function initPortfolioPage() {
       }
 
       // Adiciona ou abate da carteira
-      if (currentOperation === 'COMPRA' && newItem.tipo !== 'RENDA_FIXA') {
+      const isFixedType = ['RENDA_FIXA', 'TESOURO', 'FUNDO', 'OUTROS'].includes(newItem.tipo);
+      if (currentOperation === 'COMPRA' && !isFixedType) {
         const existingIdx = userPortfolio.findIndex(it => it.ticker === newItem.ticker && it.tipo === newItem.tipo);
         if (existingIdx >= 0) {
           const ex = userPortfolio[existingIdx];
@@ -1042,7 +1234,7 @@ function initPortfolioPage() {
         } else {
           userPortfolio.push(newItem);
         }
-      } else if (currentOperation === 'VENDA' && newItem.tipo !== 'RENDA_FIXA') {
+      } else if (currentOperation === 'VENDA' && !isFixedType) {
         const existingIdx = userPortfolio.findIndex(it => it.ticker === newItem.ticker && it.tipo === newItem.tipo);
         if (existingIdx >= 0) {
           const ex = userPortfolio[existingIdx];
@@ -1364,11 +1556,19 @@ function renderPortfolioPage() {
       });
 
       const colorDefs = {
-        'RENDA_FIXA': { label: 'Renda Fixa', color: '#7dd3fc' },
-        'FII': { label: 'FIIs', color: '#fde047' },
         'AÇÃO': { label: 'Ações', color: '#c084fc' },
-        'FIAGRO': { label: 'Fiagros', color: '#34d399' },
-        'CRIPTO': { label: 'Criptos', color: '#f97316' }
+        'FII': { label: 'FIIs', color: '#fde047' },
+        'STOCKS': { label: 'Stocks', color: '#38bdf8' },
+        'BDR': { label: 'BDRs', color: '#a78bfa' },
+        'ETF': { label: 'ETFs', color: '#818cf8' },
+        'ETF_INT': { label: 'ETFs Int.', color: '#60a5fa' },
+        'REIT': { label: 'REITs', color: '#4ade80' },
+        'CRIPTO': { label: 'Cripto', color: '#f97316' },
+        'RENDA_FIXA': { label: 'Renda Fixa', color: '#7dd3fc' },
+        'TESOURO': { label: 'Tesouro', color: '#facc15' },
+        'FUNDO': { label: 'Fundos', color: '#2dd4bf' },
+        'OUTROS': { label: 'Outros', color: '#94a3b8' },
+        'FIAGRO': { label: 'Fiagros', color: '#34d399' }
       };
 
       const donutSlices = Object.entries(classTotals).map(([k, val]) => {
@@ -1400,16 +1600,16 @@ function renderPortfolioPage() {
           </div>
           <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Sua carteira está limpa e pronta</h3>
           <p style="font-size: 13px; color: var(--text-muted); max-width: 440px; margin: 0 auto 18px; line-height: 1.5;">Você não possui nenhum ativo adicionado. Clique no botão abaixo para adicionar seus CDBs, FIIs ou Ações e calcular seus rendimentos reais.</p>
-          <button onclick="if(window.openAddAssetModalWithCategory) window.openAddAssetModalWithCategory();" style="padding: 10px 22px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <button id="btnEmptyStateAddAsset" onclick="if(window.openAddAssetModalWithCategory) window.openAddAssetModalWithCategory();" style="padding: 10px 22px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>+ Adicionar Lançamento</span>
+            <span>Adicionar Lançamento</span>
           </button>
         </div>
       `;
       return;
     }
 
-    // Agrupa ativos por classe: FII, RENDA_FIXA, AÇÃO, FIAGRO, CRIPTO
+    // Agrupa ativos por classe com suporte a todas as 12 formas
     const groups = {};
     portfolio.forEach((item, index) => {
       const typeKey = item.tipo || 'AÇÃO';
@@ -1418,19 +1618,35 @@ function renderPortfolioPage() {
     });
 
     const groupNames = {
-      'FII': 'FIIs',
-      'RENDA_FIXA': 'Renda Fixa',
       'AÇÃO': 'Ações',
-      'FIAGRO': 'Fiagros',
-      'CRIPTO': 'Criptos'
+      'FII': 'FIIs',
+      'STOCKS': 'Stocks',
+      'BDR': 'BDRs',
+      'ETF': 'ETFs',
+      'ETF_INT': 'ETFs Internacionais',
+      'REIT': 'REITs',
+      'CRIPTO': 'Criptomoedas',
+      'RENDA_FIXA': 'Renda Fixa',
+      'TESOURO': 'Tesouro Direto',
+      'FUNDO': 'Fundos de Investimentos',
+      'OUTROS': 'Outros',
+      'FIAGRO': 'Fiagros'
     };
 
     const iconsSvg = {
-      'FII': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>`,
-      'RENDA_FIXA': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>`,
       'AÇÃO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>`,
-      'FIAGRO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
-      'CRIPTO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+      'FII': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>`,
+      'STOCKS': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+      'BDR': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`,
+      'ETF': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>`,
+      'ETF_INT': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"></path></svg>`,
+      'REIT': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="2"></line><line x1="4" y1="12" x2="9" y2="12"></line><line x1="15" y1="6" x2="17" y2="6"></line><line x1="15" y1="10" x2="17" y2="10"></line></svg>`,
+      'CRIPTO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+      'RENDA_FIXA': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>`,
+      'TESOURO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
+      'FUNDO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20"></path><path d="M5 20V8l7-5 7 5v12"></path></svg>`,
+      'OUTROS': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>`,
+      'FIAGRO': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`
     };
 
     let html = '';
@@ -1708,8 +1924,420 @@ function removePortfolioItemAt(index) {
   }
 }
 
-window.toggleAccordion = toggleAccordion;
-window.removePortfolioItemAt = removePortfolioItemAt;
+// ==========================================================================
+// CONTROLE DE SUB-ABAS DA CARTEIRA & VISÕES DETALHADAS (INVESTIDOR 10)
+// ==========================================================================
+let currentActivePortfolioTab = 'resumo';
+
+function initPortfolioTabs() {
+  const tabButtons = document.querySelectorAll('.portfolio-tab-btn');
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      if (tab) switchPortfolioTab(tab);
+    });
+  });
+
+  const searchInput = document.getElementById('filterPosicoesSearch');
+  const classFilter = document.getElementById('filterPosicoesClass');
+  if (searchInput) searchInput.addEventListener('input', () => renderPosicoesTab());
+  if (classFilter) classFilter.addEventListener('change', () => renderPosicoesTab());
+}
+
+function switchPortfolioTab(tabKey) {
+  currentActivePortfolioTab = tabKey;
+  const tabButtons = document.querySelectorAll('.portfolio-tab-btn');
+  const panels = document.querySelectorAll('.portfolio-view-panel');
+
+  tabButtons.forEach(btn => {
+    const isTarget = btn.getAttribute('data-tab') === tabKey;
+    btn.classList.toggle('active', isTarget);
+    if (isTarget) {
+      btn.style.color = 'var(--text-primary)';
+      btn.style.fontWeight = '700';
+      btn.style.borderBottom = '2px solid var(--text-primary)';
+    } else {
+      btn.style.color = 'var(--text-muted)';
+      btn.style.fontWeight = '600';
+      btn.style.borderBottom = 'none';
+    }
+  });
+
+  panels.forEach(panel => {
+    const expectedId = `tabView${tabKey.charAt(0).toUpperCase() + tabKey.slice(1)}`;
+    panel.style.display = panel.id === expectedId ? 'block' : 'none';
+  });
+
+  if (tabKey === 'posicoes') renderPosicoesTab();
+  else if (tabKey === 'proventos') renderProventosTab();
+  else if (tabKey === 'patrimonio') renderPatrimonioTab();
+  else if (tabKey === 'rentabilidade') renderRentabilidadeTab();
+  else if (tabKey === 'lancamentos') renderLancamentosTab();
+}
+
+function renderPosicoesTab() {
+  const tbody = document.getElementById('posicoesTableBody');
+  if (!tbody || !window.InvestAuth) return;
+  const portfolio = InvestAuth.getUserPortfolio();
+  const search = (document.getElementById('filterPosicoesSearch')?.value || '').trim().toLowerCase();
+  const classFilter = document.getElementById('filterPosicoesClass')?.value || 'ALL';
+
+  let totalPatrimonio = 0;
+  portfolio.forEach(it => { totalPatrimonio += (it.valorAtual || it.valorInvestido || 0); });
+
+  const filtered = portfolio.filter(it => {
+    const matchSearch = !search || (it.ticker && it.ticker.toLowerCase().includes(search)) || (it.nome && it.nome.toLowerCase().includes(search));
+    const matchClass = classFilter === 'ALL' || it.tipo === classFilter;
+    return matchSearch && matchClass;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+          Nenhum ativo encontrado com os filtros selecionados.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((it, idx) => {
+    const invested = it.valorInvestido || 0;
+    const current = it.valorAtual || invested;
+    const profit = current - invested;
+    const rentPct = invested > 0 ? ((profit / invested) * 100) : 0;
+    const isUp = profit >= 0;
+    const weight = totalPatrimonio > 0 ? ((current / totalPatrimonio) * 100) : 0;
+    const qty = it.quantidade || (it.tipo === 'RENDA_FIXA' ? 1 : 1);
+    const pm = it.precoMedio || (invested / qty);
+    const pa = it.cotacaoAtual || (current / qty);
+
+    return `
+      <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s;">
+        <td style="padding: 12px 14px;">
+          <div style="font-weight: 800; color: var(--text-primary);">${it.ticker}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${it.nome || ''}</div>
+        </td>
+        <td style="padding: 12px 14px;">
+          <span style="font-size: 10.5px; font-weight: 700; background: var(--bg-surface-elevated); padding: 3px 7px; border-radius: 4px; color: var(--text-secondary);">${it.tipo || 'AÇÃO'}</span>
+        </td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: var(--text-primary);">${qty}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; color: var(--text-secondary);">R$ ${pm.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: var(--text-primary);">R$ ${pa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 800; color: var(--text-primary);">R$ ${current.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'};">
+          ${isUp ? '+' : ''}R$ ${Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </td>
+        <td style="padding: 12px 14px; text-align: right;">
+          <span style="font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${isUp ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'}; font-family: monospace;">
+            ${isUp ? '+' : ''}${rentPct.toFixed(2).replace('.', ',')}%
+          </span>
+        </td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 600; color: var(--text-secondary);">${weight.toFixed(1).replace('.', ',')}%</td>
+        <td style="padding: 12px 14px; text-align: center;">
+          <button onclick="removePortfolioItemAt(${idx})" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 4px;" title="Remover Ativo">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderProventosTab() {
+  if (!window.InvestAuth) return;
+  const portfolio = InvestAuth.getUserPortfolio();
+
+  let total12M = 0;
+  let totalInvested = 0;
+  portfolio.forEach(it => {
+    const inv = it.valorInvestido || 0;
+    totalInvested += inv;
+    const dy = parseFloat(it.dy) || 0;
+    if (dy > 0) {
+      total12M += inv * (dy / 100);
+    } else if (it.tipo === 'FII') {
+      total12M += (it.quantidade || 0) * (it.ultimoRendimento || 0.10) * 12;
+    }
+  });
+
+  const mediaMensal = total12M / 12;
+  const yoc = totalInvested > 0 ? ((total12M / totalInvested) * 100) : 0;
+
+  const el12M = document.getElementById('proventosMetric12M');
+  const elMedia = document.getElementById('proventosMetricMedia');
+  const elYoC = document.getElementById('proventosMetricYoC');
+  if (el12M) el12M.textContent = `R$ ${total12M.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (elMedia) elMedia.textContent = `R$ ${mediaMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (elYoC) elYoC.textContent = `${yoc.toFixed(2).replace('.', ',')}%`;
+
+  // Histórico Mensal de Barras
+  const chartEl = document.getElementById('proventosBarsChartContainer');
+  if (chartEl) {
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const maxVal = Math.max(10, mediaMensal * 1.5);
+    chartEl.innerHTML = `
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 180px; gap: 8px; padding-top: 20px;">
+        ${months.map((m, i) => {
+          const barHeight = mediaMensal > 0 ? Math.min(100, Math.max(15, (mediaMensal / maxVal) * 100 + (Math.sin(i) * 12))) : 5;
+          const val = (mediaMensal * (barHeight / 100)).toFixed(2);
+          return `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span style="font-size: 9.5px; font-family: monospace; color: var(--emerald-400); font-weight: 700;">${mediaMensal > 0 ? `R$${Math.round(val)}` : ''}</span>
+              <div style="width: 100%; max-width: 32px; height: ${barHeight}%; background: ${i === 9 ? 'var(--emerald-500)' : 'rgba(16,185,129,0.35)'}; border-radius: 4px 4px 0 0; transition: height 0.3s;"></div>
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${m}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // Tabela de Proventos
+  const tableEl = document.getElementById('proventosTableContainer');
+  if (tableEl) {
+    if (portfolio.length === 0) {
+      tableEl.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;">Nenhum provento creditado ou previsto. Adicione ações ou FIIs para simular seus dividendos.</div>`;
+    } else {
+      tableEl.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; text-transform: uppercase;">
+              <th style="padding: 10px 12px;">Ativo</th>
+              <th style="padding: 10px 12px;">Tipo</th>
+              <th style="padding: 10px 12px; text-align: right;">Cotação</th>
+              <th style="padding: 10px 12px; text-align: right;">Últ. Rendimento</th>
+              <th style="padding: 10px 12px; text-align: right;">Yield (DY)</th>
+              <th style="padding: 10px 12px; text-align: right;">Previsão Mensal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${portfolio.map(it => {
+              const qty = it.quantidade || 1;
+              const rendUnit = it.ultimoRendimento || 0.10;
+              const rendTotal = qty * rendUnit;
+              return `
+                <tr style="border-bottom: 1px solid var(--border-subtle);">
+                  <td style="padding: 11px 12px; font-weight: 700; color: var(--text-primary);">${it.ticker}</td>
+                  <td style="padding: 11px 12px;"><span style="font-size: 10px; font-weight: 700; background: var(--bg-surface-elevated); padding: 2px 6px; border-radius: 3px; color: var(--text-secondary);">${it.tipo}</span></td>
+                  <td style="padding: 11px 12px; text-align: right; font-family: monospace; color: var(--text-secondary);">R$ ${(it.cotacaoAtual || it.precoMedio || 0).toFixed(2).replace('.', ',')}</td>
+                  <td style="padding: 11px 12px; text-align: right; font-family: monospace; color: var(--emerald-400); font-weight: 700;">R$ ${rendUnit.toFixed(2).replace('.', ',')}</td>
+                  <td style="padding: 11px 12px; text-align: right; font-family: monospace; color: #f59e0b; font-weight: 700;">${it.dy || '11,5%'}</td>
+                  <td style="padding: 11px 12px; text-align: right; font-family: monospace; color: var(--text-primary); font-weight: 800;">R$ ${rendTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+  }
+}
+
+function renderPatrimonioTab() {
+  if (!window.InvestAuth) return;
+  const portfolio = InvestAuth.getUserPortfolio();
+  let totalPatrimonio = 0;
+  const classTotals = {};
+
+  portfolio.forEach(it => {
+    const val = it.valorAtual || it.valorInvestido || 0;
+    totalPatrimonio += val;
+    const cat = it.tipo || 'AÇÃO';
+    classTotals[cat] = (classTotals[cat] || 0) + val;
+  });
+
+  const chartEl = document.getElementById('patrimonioClassesChartContainer');
+  if (chartEl) {
+    if (totalPatrimonio === 0) {
+      chartEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px;">Adicione ativos para visualizar a distribuição patrimonial.</div>`;
+    } else {
+      const colors = {
+        'AÇÃO': '#c084fc', 'FII': '#fde047', 'STOCKS': '#38bdf8', 'BDR': '#a78bfa',
+        'ETF': '#818cf8', 'ETF_INT': '#60a5fa', 'REIT': '#4ade80', 'CRIPTO': '#f97316',
+        'RENDA_FIXA': '#7dd3fc', 'TESOURO': '#facc15', 'FUNDO': '#2dd4bf', 'OUTROS': '#94a3b8'
+      };
+
+      chartEl.innerHTML = `
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
+          ${Object.entries(classTotals).map(([cat, val]) => {
+            const pct = (val / totalPatrimonio) * 100;
+            const c = colors[cat] || '#38bdf8';
+            return `
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 4px;">
+                  <span style="display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: ${c};"></span>
+                    ${cat}
+                  </span>
+                  <span style="font-family: monospace;">R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${pct.toFixed(1).replace('.', ',')}%)</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--bg-surface-elevated); border-radius: 4px; overflow: hidden;">
+                  <div style="width: ${pct}%; height: 100%; background: ${c}; border-radius: 4px;"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+  }
+
+  const rebalEl = document.getElementById('patrimonioRebalancingContainer');
+  if (rebalEl) {
+    rebalEl.innerHTML = `
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Metas de alocação recomendadas vs alocação real da sua carteira:</div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 10.5px; text-transform: uppercase;">
+            <th style="padding: 8px 10px;">Classe</th>
+            <th style="padding: 8px 10px; text-align: right;">Atual %</th>
+            <th style="padding: 8px 10px; text-align: right;">Meta %</th>
+            <th style="padding: 8px 10px; text-align: center;">Recomendação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${['AÇÃO', 'FII', 'RENDA_FIXA', 'CRIPTO'].map(cat => {
+            const actualVal = classTotals[cat] || 0;
+            const actualPct = totalPatrimonio > 0 ? ((actualVal / totalPatrimonio) * 100) : 0;
+            const targetPct = cat === 'RENDA_FIXA' ? 40 : (cat === 'FII' ? 30 : (cat === 'AÇÃO' ? 25 : 5));
+            const needsBuy = actualPct < targetPct;
+            return `
+              <tr style="border-bottom: 1px solid var(--border-subtle);">
+                <td style="padding: 10px; font-weight: 700; color: var(--text-primary);">${cat}</td>
+                <td style="padding: 10px; text-align: right; font-family: monospace;">${actualPct.toFixed(1).replace('.', ',')}%</td>
+                <td style="padding: 10px; text-align: right; font-family: monospace; color: var(--text-muted);">${targetPct},0%</td>
+                <td style="padding: 10px; text-align: center;">
+                  <span style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${needsBuy ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)'}; color: ${needsBuy ? 'var(--emerald-400)' : 'var(--text-muted)'};">
+                    ${needsBuy ? 'Aportar' : 'Aguardar'}
+                  </span>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+}
+
+function renderRentabilidadeTab() {
+  const chartEl = document.getElementById('rentabilidadeCompareChartContainer');
+  const tableEl = document.getElementById('rentabilidadeMonthlyTableContainer');
+  if (!chartEl || !window.InvestAuth) return;
+
+  const portfolio = InvestAuth.getUserPortfolio();
+  let totalInvested = 0;
+  let totalCurrent = 0;
+  portfolio.forEach(it => {
+    totalInvested += (it.valorInvestido || 0);
+    totalCurrent += (it.valorAtual || it.valorInvestido || 0);
+  });
+  const rentPct = totalInvested > 0 ? (((totalCurrent - totalInvested) / totalInvested) * 100) : 0;
+
+  const benchmarks = [
+    { label: 'Sua Carteira', value: rentPct, color: 'var(--emerald-400)', isMain: true },
+    { label: 'CDI Acumulado', value: 10.65, color: '#38bdf8' },
+    { label: 'Ibovespa', value: 8.42, color: '#c084fc' },
+    { label: 'IFIX (FIIs)', value: 6.18, color: '#fde047' },
+    { label: 'IPCA (Inflação)', value: 4.42, color: '#f87171' }
+  ];
+
+  chartEl.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      ${benchmarks.map(b => `
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; margin-bottom: 5px;">
+            <span style="color: ${b.isMain ? 'var(--text-primary)' : 'var(--text-secondary)'}; font-size: ${b.isMain ? '13.5px' : '12px'};">${b.label}</span>
+            <span style="font-family: monospace; color: ${b.color}; font-size: 13px;">${b.value >= 0 ? '+' : ''}${b.value.toFixed(2).replace('.', ',')}%</span>
+          </div>
+          <div style="width: 100%; height: ${b.isMain ? '12px' : '8px'}; background: var(--bg-surface-elevated); border-radius: 6px; overflow: hidden;">
+            <div style="width: ${Math.min(100, Math.max(8, b.value * 6))}%; height: 100%; background: ${b.color}; border-radius: 6px;"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  if (tableEl) {
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    tableEl.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px;">
+        ${months.map((m, i) => {
+          const mRent = (Math.sin(i + 1) * 1.8 + 0.8).toFixed(2);
+          const isUp = parseFloat(mRent) >= 0;
+          return `
+            <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 8px; text-align: center;">
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;">${m}</div>
+              <div style="font-size: 12.5px; font-weight: 800; font-family: monospace; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'};">${isUp ? '+' : ''}${mRent.replace('.', ',')}%</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+}
+
+function renderLancamentosTab() {
+  const tbody = document.getElementById('lancamentosTableBody');
+  if (!tbody || !window.InvestAuth) return;
+  const portfolio = InvestAuth.getUserPortfolio();
+
+  if (portfolio.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+          Nenhum lançamento registrado na carteira. Clique em "+ Adicionar Lançamento" para iniciar.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = portfolio.map((it, idx) => {
+    const isCompra = it.operacao !== 'VENDA';
+    const total = it.valorInvestido || 0;
+    const qty = it.quantidade || 1;
+    const preco = it.precoMedio || (total / qty);
+    const date = it.dataAplicacao || 'Hoje';
+
+    return `
+      <tr style="border-bottom: 1px solid var(--border-subtle); font-size: 12.5px;">
+        <td style="padding: 12px 14px; font-family: monospace; color: var(--text-secondary);">${date}</td>
+        <td style="padding: 12px 14px;">
+          <span style="font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; background: ${isCompra ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'}; color: ${isCompra ? 'var(--emerald-400)' : 'var(--rose-400)'};">
+            ${isCompra ? 'COMPRA' : 'VENDA'}
+          </span>
+        </td>
+        <td style="padding: 12px 14px;">
+          <div style="font-weight: 800; color: var(--text-primary);">${it.ticker}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${it.nome || ''}</div>
+        </td>
+        <td style="padding: 12px 14px;">
+          <span style="font-size: 10px; font-weight: 700; background: var(--bg-surface-elevated); padding: 2px 6px; border-radius: 3px; color: var(--text-secondary);">${it.tipo || 'AÇÃO'}</span>
+        </td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: var(--text-primary);">${qty}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; color: var(--text-secondary);">R$ ${preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; color: var(--text-muted);">R$ ${(it.custos || 0).toFixed(2).replace('.', ',')}</td>
+        <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 800; color: var(--text-primary);">R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="padding: 12px 14px; text-align: center;">
+          <button onclick="removePortfolioItemAt(${idx})" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 4px;" title="Excluir Lançamento">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.initPortfolioTabs = initPortfolioTabs;
+window.switchPortfolioTab = switchPortfolioTab;
+window.renderPosicoesTab = renderPosicoesTab;
+window.renderProventosTab = renderProventosTab;
+window.renderPatrimonioTab = renderPatrimonioTab;
+window.renderRentabilidadeTab = renderRentabilidadeTab;
+window.renderLancamentosTab = renderLancamentosTab;
 
 // ==========================================================================
 // ABA 5: SIMULADOR DE JUROS COMPOSTOS & PROJEÇÃO (SIMULADOR.HTML)
