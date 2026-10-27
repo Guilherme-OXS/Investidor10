@@ -1,16 +1,19 @@
 // ==========================================================================
-// INVESTIDOR 10X - APLICAÇÃO WEB PWA & CONTROLADOR DE INTERFACE
+// INVESTIDOR 10X - APLICAÇÃO WEB PWA & CONTROLADOR DE INTERFACE (PARTE 2)
 // ==========================================================================
 
 let deferredPrompt = null;
 let currentFilter = 'all';
 let searchQuery = '';
+let selectedCompareTickers = ['ITUB4', 'BBAS3']; // Comparação inicial padrão
+let USER_PORTFOLIO = JSON.parse(localStorage.getItem('i10x_portfolio')) || INITIAL_USER_PORTFOLIO;
 
 document.addEventListener('DOMContentLoaded', () => {
   initServiceWorker();
   initTheme();
   renderTickerRibbon();
   renderAssets();
+  renderComparator();
   renderPortfolio();
   initSimulator();
   initEventListeners();
@@ -92,18 +95,22 @@ function renderAssets() {
   const countBadge = document.getElementById('assetCountBadge');
   if (!grid || !ASSETS_DATA) return;
 
-  // Filtragem
+  // Filtragem inteligente
   const filtered = ASSETS_DATA.filter(asset => {
     // Filtro de texto da busca
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const match = asset.ticker.toLowerCase().includes(q) || asset.name.toLowerCase().includes(q) || asset.sector.toLowerCase().includes(q);
+      const match = asset.ticker.toLowerCase().includes(q) || 
+                    asset.name.toLowerCase().includes(q) || 
+                    (asset.sector && asset.sector.toLowerCase().includes(q));
       if (!match) return false;
     }
 
     // Filtros por botões
     if (currentFilter === 'AÇÃO') return asset.type === 'AÇÃO';
     if (currentFilter === 'FII') return asset.type === 'FII';
+    if (currentFilter === 'FIAGRO') return asset.type === 'FIAGRO';
+    if (currentFilter === 'BDR') return asset.type === 'BDR';
     if (currentFilter === 'high-dy') {
       const dyNum = parseFloat(asset.dy.replace('%', ''));
       return dyNum >= 8.0;
@@ -139,7 +146,7 @@ function renderAssets() {
       yieldTrapHtml = `
         <div class="alert-yield-trap">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <span><strong>Alerta Yield Trap:</strong> Dividend Yield inflado por desvalorização patrimonial.</span>
+          <span><strong>Alerta Yield Trap:</strong> Dividend Yield inflado por desvalorização patrimonial e calote.</span>
         </div>
       `;
     }
@@ -167,7 +174,7 @@ function renderAssets() {
           </div>
           <div class="metric-col">
             <span class="metric-label">P/VP</span>
-            <span class="metric-val">${asset.pvp}</span>
+            <span class="metric-val ${asset.pvp < 1 ? 'highlight' : ''}">${asset.pvp}</span>
           </div>
           <div class="metric-col">
             <span class="metric-label">DY (12M)</span>
@@ -179,8 +186,8 @@ function renderAssets() {
           </div>
         </div>
       `;
-    } else if (asset.type === 'FII') {
-      // FIIs: DY, P/VP, Vacância, VP Cota
+    } else if (asset.type === 'FII' || asset.type === 'FIAGRO') {
+      // FIIs e Fiagros: DY, P/VP, Vacância, VP Cota
       metricsHtml = `
         <div class="metrics-row">
           <div class="metric-col">
@@ -196,13 +203,13 @@ function renderAssets() {
             <span class="metric-val">R$ ${asset.vp_cota.toFixed(2)}</span>
           </div>
           <div class="metric-col">
-            <span class="metric-label">Vacância</span>
-            <span class="metric-val">${asset.vacancia_fisica || 'N/A'}</span>
+            <span class="metric-label">${asset.type === 'FIAGRO' ? 'Proventos' : 'Vacância'}</span>
+            <span class="metric-val">${asset.vacancia_fisica || 'Mensal'}</span>
           </div>
         </div>
       `;
     } else {
-      // Empresas Tradicionais: P/L, P/VP, DY, ROE, Dívida/EBITDA
+      // Empresas Tradicionais e BDRs: P/L, P/VP, DY, ROE
       metricsHtml = `
         <div class="metrics-row">
           <div class="metric-col">
@@ -211,7 +218,7 @@ function renderAssets() {
           </div>
           <div class="metric-col">
             <span class="metric-label">P/VP</span>
-            <span class="metric-val">${asset.pvp}</span>
+            <span class="metric-val ${asset.pvp < 1 ? 'highlight' : ''}">${asset.pvp}</span>
           </div>
           <div class="metric-col">
             <span class="metric-label">DY (12M)</span>
@@ -219,13 +226,14 @@ function renderAssets() {
           </div>
           <div class="metric-col">
             <span class="metric-label">ROE</span>
-            <span class="metric-val">${asset.roe}</span>
+            <span class="metric-val highlight">${asset.roe}</span>
           </div>
         </div>
       `;
     }
 
     const scoreClass = asset.score >= 8.5 ? 'high' : (asset.score < 6 ? 'risk' : '');
+    const displaySector = asset.sector || asset.fiiType || 'Renda Variável';
 
     return `
       <article class="asset-card" onclick="openAssetModal('${asset.ticker}')">
@@ -253,7 +261,7 @@ function renderAssets() {
         </div>
 
         <div class="card-footer">
-          <div style="font-size: 11.5px; color: var(--text-muted);">${asset.sector}</div>
+          <div style="font-size: 11.5px; color: var(--text-muted);">${displaySector}</div>
           <div class="score-badge ${scoreClass}">
             <span>Score ${asset.score}</span>
             <small>(${asset.scoreStatus})</small>
@@ -264,7 +272,7 @@ function renderAssets() {
   }).join('');
 }
 
-// 5. MODAL DE RAIO-X COMPLETO DO ATIVO
+// 5. MODAL DE RAIO-X COMPLETO DO ATIVO COM VALUATION DINÂMICO INTERATIVO
 function openAssetModal(ticker) {
   const asset = ASSETS_DATA.find(a => a.ticker === ticker);
   if (!asset) return;
@@ -279,27 +287,55 @@ function openAssetModal(ticker) {
   icon.textContent = asset.ticker.substring(0, 4);
   title.textContent = asset.ticker;
   badge.textContent = asset.type;
-  company.textContent = `${asset.name} • ${asset.sector}`;
+  company.textContent = `${asset.name} • ${asset.sector || asset.fiiType || 'Ativo B3'}`;
 
-  // Valuation Cards (Graham e Bazin com ressalvas honestas)
+  // Cálculo de Margem de Segurança Inicial (Bazin 6%)
+  const dyDecimal = parseFloat(asset.dy.replace('%', '')) / 100;
+  const annualDividend = asset.price * dyDecimal;
+  const initialBazin = annualDividend / 0.06;
+  const safetyMargin = ValuationEngine.calculateMarginOfSafety(asset.price, initialBazin);
+
+  // Graham Check
+  const grahamResult = ValuationEngine.calculateGraham(asset.lpa, asset.vpa, asset);
+
   let valuationCards = '';
-  if (asset.type === 'AÇÃO') {
+  if (asset.type === 'AÇÃO' || asset.type === 'BDR') {
     valuationCards = `
       <div class="valuation-box-grid">
         <div class="val-card">
-          <div class="val-card-title">Preço Teto Décio Bazin (DY 6%)</div>
-          <div class="val-card-price">R$ ${asset.bazin_price ? asset.bazin_price.toFixed(2) : '--'}</div>
-          <div class="val-card-note">Preço máximo a pagar para garantir no mínimo 6% a.a. em dividendos.</div>
+          <div class="val-card-title">Preço Teto Décio Bazin</div>
+          <div class="val-card-price" id="modalBazinPrice">R$ ${initialBazin.toFixed(2)}</div>
+          <div style="margin-top: 6px;">
+            <span class="safety-margin-badge ${safetyMargin.isPositive ? 'positive' : 'negative'}" id="modalSafetyBadge">
+              ${safetyMargin.isPositive ? '▲ +' : '▼ '}${safetyMargin.marginPct}% de Margem
+            </span>
+          </div>
+          <div class="val-card-note" id="modalBazinNote">${safetyMargin.status}</div>
         </div>
         <div class="val-card">
           <div class="val-card-title">Preço Justo Benjamin Graham</div>
-          <div class="val-card-price">R$ ${asset.graham_price ? asset.graham_price.toFixed(2) : '--'}</div>
-          <div class="val-card-note">${asset.grahamWarning || 'Calculado com base em √(22,5 × LPA × VPA).'}</div>
+          <div class="val-card-price">${grahamResult.isApplicable && grahamResult.price ? `R$ ${grahamResult.price.toFixed(2)}` : '--'}</div>
+          <div class="val-card-note">${grahamResult.reason}</div>
         </div>
         <div class="val-card">
           <div class="val-card-title">P/L Contábil vs Ajustado</div>
           <div class="val-card-price">${asset.pl_contabil}x <span style="font-size: 13px; color: var(--text-muted); font-weight: normal;">/ ${asset.pl_ajustado || asset.pl_contabil}x</span></div>
           <div class="val-card-note">${asset.nonRecurrentNote || 'Lucro estável sem distorções tributárias relevantes.'}</div>
+        </div>
+      </div>
+
+      <!-- Slider Interativo de Bazin -->
+      <div class="bazin-slider-box">
+        <div class="bazin-slider-header">
+          <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary);">Taxa Mínima de Dividendos Desejada:</span>
+          <span style="font-size: 14px; font-weight: 800; font-family: monospace; color: var(--emerald-400);" id="bazinYieldLabel">6.0% a.a.</span>
+        </div>
+        <input type="range" class="bazin-range-input" id="bazinSlider" min="4" max="14" step="0.5" value="6" oninput="updateBazinSlider('${asset.ticker}', this.value)">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+          <span>4% (Mais conservador)</span>
+          <span>6% (Padrão Décio Bazin)</span>
+          <span>10%</span>
+          <span>14% (High Yield)</span>
         </div>
       </div>
     `;
@@ -314,7 +350,7 @@ function openAssetModal(ticker) {
         <div class="val-card">
           <div class="val-card-title">P/VP Real</div>
           <div class="val-card-price ${asset.pvp < 1 ? 'highlight' : ''}">${asset.pvp}</div>
-          <div class="val-card-note">${asset.pvp < 1 ? 'Negociando com desconto sobre o valor patrimonial.' : 'Negociando com ágio sobre o patrimônio.'}</div>
+          <div class="val-card-note">${asset.pvp < 1 ? 'Negociando com desconto sobre o patrimônio físico.' : 'Negociando com ágio sobre o patrimônio.'}</div>
         </div>
         <div class="val-card">
           <div class="val-card-title">Rendimento Médio Mensal</div>
@@ -372,6 +408,32 @@ function openAssetModal(ticker) {
   document.body.style.overflow = 'hidden';
 }
 
+// Atualização dinâmica do slider de Bazin
+function updateBazinSlider(ticker, yieldVal) {
+  const asset = ASSETS_DATA.find(a => a.ticker === ticker);
+  if (!asset) return;
+
+  const y = parseFloat(yieldVal) / 100;
+  const dyDecimal = parseFloat(asset.dy.replace('%', '')) / 100;
+  const annualDividend = asset.price * dyDecimal;
+  const newBazin = annualDividend / y;
+  const safety = ValuationEngine.calculateMarginOfSafety(asset.price, newBazin);
+
+  const label = document.getElementById('bazinYieldLabel');
+  const price = document.getElementById('modalBazinPrice');
+  const badge = document.getElementById('modalSafetyBadge');
+  const note = document.getElementById('modalBazinNote');
+
+  if (label) label.textContent = `${parseFloat(yieldVal).toFixed(1)}% a.a.`;
+  if (price) price.textContent = `R$ ${newBazin.toFixed(2)}`;
+  if (note) note.textContent = safety.status;
+
+  if (badge) {
+    badge.className = `safety-margin-badge ${safety.isPositive ? 'positive' : 'negative'}`;
+    badge.textContent = `${safety.isPositive ? '▲ +' : '▼ '}${safety.marginPct}% de Margem`;
+  }
+}
+
 function closeAssetModal() {
   const modal = document.getElementById('assetModal');
   if (modal) {
@@ -381,7 +443,90 @@ function closeAssetModal() {
   }
 }
 
-// 6. RENDERIZAÇÃO DA MINHA CARTEIRA
+// 6. RENDERIZAÇÃO DO COMPARADOR LADO A LADO
+function renderComparator() {
+  const container = document.getElementById('compareTableContainer');
+  const tagsContainer = document.getElementById('compareSelectedTags');
+  const addSelect = document.getElementById('compareAddSelect');
+  if (!container || !tagsContainer || !addSelect) return;
+
+  // Renderiza tags de ativos selecionados
+  tagsContainer.innerHTML = selectedCompareTickers.map(ticker => `
+    <div class="compare-tag">
+      <span>${ticker}</span>
+      ${selectedCompareTickers.length > 1 ? `<button class="compare-tag-remove" onclick="removeCompareTicker('${ticker}')" title="Remover">&times;</button>` : ''}
+    </div>
+  `).join('');
+
+  // Atualiza opções do dropdown (apenas ativos não selecionados)
+  const availableAssets = ASSETS_DATA.filter(a => !selectedCompareTickers.includes(a.ticker));
+  addSelect.innerHTML = `<option value="">+ Adicionar ativo para comparar...</option>` +
+    availableAssets.map(a => `<option value="${a.ticker}">${a.ticker} - ${a.name}</option>`).join('');
+
+  // Gera dados comparativos
+  const result = ValuationEngine.compareAssets(selectedCompareTickers, ASSETS_DATA);
+  if (!result) return;
+
+  const { assets, comparisonTable } = result;
+
+  // Cabeçalho da tabela
+  const headerHtml = `
+    <thead>
+      <tr>
+        <th style="width: 200px;">Indicador</th>
+        ${assets.map(a => `
+          <th style="text-align: center;">
+            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); font-family: monospace;">${a.ticker}</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: normal; text-transform: none;">${a.type}</div>
+          </th>
+        `).join('')}
+      </tr>
+    </thead>
+  `;
+
+  // Linhas da tabela
+  const rowsHtml = comparisonTable.map(row => `
+    <tr>
+      <td class="metric-title-cell">${row.metric}</td>
+      ${row.values.map((val, idx) => {
+        const isWinner = row.bestIndex === idx;
+        return `
+          <td style="text-align: center; font-family: 'JetBrains Mono', monospace;" class="${isWinner ? 'winner-cell' : ''}">
+            ${val.formatted}
+            ${isWinner ? '<span class="winner-crown" title="Melhor índice">👑</span>' : ''}
+          </td>
+        `;
+      }).join('')}
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <table class="compare-table">
+      ${headerHtml}
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+  `;
+}
+
+function addCompareTicker(ticker) {
+  if (!ticker || selectedCompareTickers.includes(ticker)) return;
+  if (selectedCompareTickers.length >= 4) {
+    alert('Você pode comparar até 4 ativos ao mesmo tempo.');
+    return;
+  }
+  selectedCompareTickers.push(ticker);
+  renderComparator();
+}
+
+function removeCompareTicker(ticker) {
+  if (selectedCompareTickers.length <= 1) return;
+  selectedCompareTickers = selectedCompareTickers.filter(t => t !== ticker);
+  renderComparator();
+}
+
+// 7. RENDERIZAÇÃO DA MINHA CARTEIRA
 function renderPortfolio() {
   const container = document.getElementById('portfolioContainer');
   if (!container || !USER_PORTFOLIO) return;
@@ -452,7 +597,7 @@ function renderPortfolio() {
   `;
 }
 
-// 7. SIMULADOR DE JUROS COMPOSTOS & PROVENTOS REINVESTIDOS
+// 8. SIMULADOR DE JUROS COMPOSTOS & PROVENTOS REINVESTIDOS
 function initSimulator() {
   const initialInput = document.getElementById('simInitial');
   const monthlyInput = document.getElementById('simMonthly');
@@ -474,7 +619,7 @@ function initSimulator() {
     }
 
     const totalInvested = P + (PMT * months);
-    const monthlyIncome = total * 0.008; // estimativa de 0.8% a.m. de renda passiva
+    const monthlyIncome = total * 0.008;
 
     document.getElementById('simResultTotal').textContent = `R$ ${total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}`;
     document.getElementById('simResultInvested').textContent = `R$ ${totalInvested.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}`;
@@ -488,7 +633,7 @@ function initSimulator() {
   calculate();
 }
 
-// 8. EVENT LISTENERS GERAIS
+// 9. EVENT LISTENERS GERAIS
 function initEventListeners() {
   // Pílulas de filtro
   const pills = document.querySelectorAll('.pill-item');
@@ -509,7 +654,6 @@ function initEventListeners() {
       renderAssets();
     });
 
-    // Tecla de atalho '/'
     window.addEventListener('keydown', (e) => {
       if (e.key === '/' && document.activeElement !== searchInput) {
         e.preventDefault();
@@ -518,15 +662,14 @@ function initEventListeners() {
     });
   }
 
-  // Mobile search trigger
-  const mobileSearch = document.getElementById('mobileSearchTrigger');
-  if (mobileSearch) {
-    mobileSearch.addEventListener('click', (e) => {
-      e.preventDefault();
-      const term = prompt('Digite o ticker ou nome da empresa para buscar:');
-      if (term !== null) {
-        searchQuery = term.trim();
-        renderAssets();
+  // Listener para adicionar ativo no comparador
+  const compareAddSelect = document.getElementById('compareAddSelect');
+  if (compareAddSelect) {
+    compareAddSelect.addEventListener('change', (e) => {
+      const selected = e.target.value;
+      if (selected) {
+        addCompareTicker(selected);
+        e.target.value = '';
       }
     });
   }

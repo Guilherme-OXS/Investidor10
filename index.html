@@ -49,9 +49,10 @@
       <a class="nav-link active" data-tab="todos" href="#todos">Início</a>
       <a class="nav-link" data-tab="acoes" href="#acoes">Ações</a>
       <a class="nav-link" data-tab="fiis" href="#fiis">FIIs</a>
+      <a class="nav-link" data-tab="comparador" href="#compareSection">Comparador</a>
       <a class="nav-link" data-tab="radar" href="#radar">Radar de Proventos</a>
-      <a class="nav-link" data-tab="carteira" href="#carteira">Minha Carteira</a>
-      <a class="nav-link" data-tab="simulador" href="#simulador">Simulador</a>
+      <a class="nav-link" data-tab="carteira" href="#portfolioSection">Minha Carteira</a>
+      <a class="nav-link" data-tab="simulador" href="#simulatorSection">Simulador</a>
     </nav>
 
     <!-- Barra de Busca Rápida (Desktop) -->
@@ -60,7 +61,7 @@
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
-      <input type="text" class="search-input" id="globalSearchInput" placeholder="Buscar ativo (ex: PETR4, HGLG11)..." autocomplete="off">
+      <input type="text" class="search-input" id="globalSearchInput" placeholder="Buscar ativo (ex: PETR4, HGLG11, ITUB4)..." autocomplete="off">
       <span class="search-shortcut">/</span>
     </div>
 
@@ -101,6 +102,8 @@
       <button class="pill-item active" data-filter="all">Todos os Ativos</button>
       <button class="pill-item" data-filter="AÇÃO">Ações B3</button>
       <button class="pill-item" data-filter="FII">Fundos Imobiliários</button>
+      <button class="pill-item" data-filter="FIAGRO">Fiagros</button>
+      <button class="pill-item" data-filter="BDR">BDRs (EUA)</button>
       <button class="pill-item" data-filter="high-dy">Maiores Proventos (DY > 8%)</button>
       <button class="pill-item" data-filter="safe">Sem Armadilha de Yield</button>
       <button class="pill-item" data-filter="low-pl">Menor P/L</button>
@@ -127,6 +130,40 @@
     <div class="assets-grid" id="assetsGrid">
       <!-- Injetado dinamicamente via app.js -->
     </div>
+
+    <!-- Seção: Comparador Lado a Lado de Ativos (Parte 2) -->
+    <section id="compareSection" class="compare-container">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-400)" stroke-width="2.5">
+              <path d="M18 20V10"></path>
+              <path d="M12 20V4"></path>
+              <path d="M6 20v-6"></path>
+            </svg>
+            Comparador Lado a Lado de Ativos
+          </h2>
+          <p class="section-subtitle">Analise até 4 ativos frente a frente com destaque automático dos melhores múltiplos e valuation.</p>
+        </div>
+      </div>
+
+      <div class="compare-header-row">
+        <div class="compare-tag-list" id="compareSelectedTags">
+          <!-- Tags de ativos selecionados inseridas via JS -->
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <select id="compareAddSelect" class="compare-select">
+            <option value="">+ Adicionar ativo para comparar...</option>
+            <!-- Opções inseridas via JS -->
+          </select>
+        </div>
+      </div>
+
+      <div class="compare-table-wrapper" id="compareTableContainer">
+        <!-- Tabela comparativa gerada dinamicamente pelo ValuationEngine -->
+      </div>
+    </section>
 
     <!-- Seção: Minha Carteira Rápida (Exemplo com Preço Médio e Rendimentos Reais) -->
     <section id="portfolioSection" style="margin-top: 40px;">
@@ -242,6 +279,14 @@
       </svg>
       <span>Radar</span>
     </a>
+    <a class="bottom-nav-item" data-tab="comparador" href="#compareSection">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 20V10"></path>
+        <path d="M12 20V4"></path>
+        <path d="M6 20v-6"></path>
+      </svg>
+      <span>Comparar</span>
+    </a>
     <a class="bottom-nav-item" data-tab="carteira" href="#portfolioSection">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -254,19 +299,13 @@
         <line x1="12" y1="1" x2="12" y2="23"></line>
         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
       </svg>
-      <span>Simulador</span>
-    </a>
-    <a class="bottom-nav-item" id="mobileSearchTrigger" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      <span>Buscar</span>
+      <span>Simular</span>
     </a>
   </nav>
 
   <!-- Scripts -->
   <script src="/js/data.js"></script>
+  <script src="/js/valuation.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>
