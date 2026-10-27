@@ -27,7 +27,7 @@
       <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">
         InvestLucro<span class="badge-pro" style="margin-left: 6px; font-size: 10px; vertical-align: middle;">PRO</span>
       </h1>
-      <p style="font-size: 12.5px; color: var(--text-muted);">Terminal Privado: Administrador & Convidados</p>
+      <p style="font-size: 12.5px; color: var(--text-muted);">Área Restrita • Acesso Seguro</p>
     </div>
 
     <!-- ABAS ENTRAR / CONVITE -->
@@ -40,20 +40,16 @@
     <form id="loginForm">
       <div style="margin-bottom: 16px;">
         <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Usuário de Acesso</label>
-        <input type="text" id="loginUsername" placeholder="Digite seu usuário" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+        <input type="text" id="loginUsername" placeholder="Digite seu usuário" required autocomplete="username" style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
 
-      <div style="margin-bottom: 12px;">
+      <div style="margin-bottom: 24px;">
         <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Senha de Acesso</label>
-        <input type="password" id="loginPassword" placeholder="••••••••" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+        <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
       </div>
-
-      <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">
-        No primeiro acesso como <strong>Guilherme.Otavio</strong>, a senha digitada será registrada como sua senha definitiva no banco de dados em nuvem.
-      </p>
 
       <button type="submit" id="btnSubmitLogin" style="width: 100%; padding: 12px; background: var(--emerald-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
-        Acessar Carteira Privada
+        Acessar Carteira
       </button>
     </form>
 

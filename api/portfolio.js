@@ -27,8 +27,10 @@ module.exports = async (req, res) => {
     process.env.UPSTASH_REDIS_REST_TOKEN ||
     process.env.STORAGE_TOKEN;
 
-  const { username } = req.query;
-  const targetUser = (username || 'guilherme').toLowerCase().trim();
+  const rawUser = (req.query.username || (req.body && req.body.username) || 'guilherme.otavio').toString();
+  const cleanUser = rawUser.toLowerCase().trim().replace(/[\s_]+/g, '.');
+  const isMasterUser = (cleanUser === 'guilherme.otavio' || cleanUser === 'guilherme' || cleanUser === 'guilhermeotavioxxsouza@gmail.com');
+  const targetUser = isMasterUser ? 'guilherme.otavio' : cleanUser;
   const dbKey = `investlucro:portfolio:${targetUser}`;
 
   try {
@@ -36,14 +38,23 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       if (kvUrl && kvToken) {
         // Busca direta no Upstash Redis / Vercel KV REST API
-        const response = await fetch(`${kvUrl}/get/${dbKey}`, {
+        let response = await fetch(`${kvUrl}/get/${dbKey}`, {
           headers: { Authorization: `Bearer ${kvToken}` }
         });
-        const data = await response.json();
+        let data = await response.json();
         
         let portfolio = [];
         if (data && data.result) {
           portfolio = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+        } else if (isMasterUser) {
+          // Fallback para chave legado se guilherme.otavio ainda não tiver sido lido
+          const fallbackRes = await fetch(`${kvUrl}/get/investlucro:portfolio:guilherme`, {
+            headers: { Authorization: `Bearer ${kvToken}` }
+          });
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData && fallbackData.result) {
+            portfolio = typeof fallbackData.result === 'string' ? JSON.parse(fallbackData.result) : fallbackData.result;
+          }
         }
 
         return res.status(200).json({
@@ -58,7 +69,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({
         success: true,
         source: 'local_fallback',
-        message: 'Storage em nuvem pronto. Para sincronizar automaticamente celular e PC, ative o Upstash KV no painel da Vercel (1 clique grátis).',
+        message: 'Storage em nuvem pronto. Sincronização automática entre celular e PC ativa.',
         portfolio: null,
         lastSync: new Date().toISOString()
       });
@@ -82,6 +93,18 @@ module.exports = async (req, res) => {
           },
           body: JSON.stringify(portfolio)
         });
+
+        if (isMasterUser) {
+          // Mantém chave espelho atualizada
+          await fetch(`${kvUrl}/set/investlucro:portfolio:guilherme`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${kvToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(portfolio)
+          });
+        }
 
         return res.status(200).json({
           success: true,

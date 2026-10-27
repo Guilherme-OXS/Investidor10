@@ -42,18 +42,29 @@ module.exports = async (req, res) => {
       }
 
       const rawUser = username.trim();
-      const u = rawUser.toLowerCase();
-      const isMasterAdmin = (u === 'guilherme.otavio' || u === 'guilherme' || u === 'guilhermeotavioxxsouza@gmail.com');
+      const cleanUser = rawUser.toLowerCase().replace(/[\s_]+/g, '.');
+      const isMasterAdmin = (cleanUser === 'guilherme.otavio' || cleanUser === 'guilherme' || cleanUser === 'guilhermeotavioxxsouza@gmail.com');
 
       // Se temos o Upstash Redis conectado
       if (kvUrl && kvToken) {
-        const userDbKey = isMasterAdmin ? 'investlucro:user:guilherme.otavio' : `investlucro:user:${u}`;
+        const userDbKey = isMasterAdmin ? 'investlucro:user:guilherme.otavio' : `investlucro:user:${cleanUser}`;
 
         // Busca o usuário no banco de dados na nuvem
-        const getRes = await fetch(`${kvUrl}/get/${userDbKey}`, {
+        let getRes = await fetch(`${kvUrl}/get/${userDbKey}`, {
           headers: { Authorization: `Bearer ${kvToken}` }
         });
-        const getData = await getRes.json();
+        let getData = await getRes.json();
+
+        // Se for admin e não achar em guilherme.otavio, tenta fallback em guilherme
+        if (isMasterAdmin && (!getData || !getData.result)) {
+          const fallbackRes = await fetch(`${kvUrl}/get/investlucro:user:guilherme`, {
+            headers: { Authorization: `Bearer ${kvToken}` }
+          });
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData && fallbackData.result) {
+            getData = fallbackData;
+          }
+        }
 
         let savedUser = null;
         if (getData && getData.result) {
@@ -63,6 +74,7 @@ module.exports = async (req, res) => {
         const inputHash = crypto.createHash('sha256').update(`${password}_salt_investlucro`).digest('hex');
 
         // PRIMEIRO ACESSO DO ADMINISTRADOR GUILHERME.OTAVIO
+        // A senha digitada neste primeiro acesso é gravada permanentemente no banco
         if (isMasterAdmin && !savedUser) {
           const masterProfile = {
             id: 'usr_guilherme_master',
@@ -73,8 +85,17 @@ module.exports = async (req, res) => {
             createdAt: new Date().toISOString()
           };
 
-          // Grava a senha escolhida pelo Guilherme na nuvem
-          await fetch(`${kvUrl}/set/${userDbKey}`, {
+          // Grava a senha escolhida pelo Guilherme na nuvem em ambas as chaves
+          await fetch(`${kvUrl}/set/investlucro:user:guilherme.otavio`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${kvToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(masterProfile)
+          });
+
+          await fetch(`${kvUrl}/set/investlucro:user:guilherme`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${kvToken}`,
@@ -86,7 +107,7 @@ module.exports = async (req, res) => {
           return res.status(200).json({
             success: true,
             isFirstAccess: true,
-            message: 'Primeiro acesso confirmado! Sua senha pessoal foi cadastrada com sucesso.',
+            message: 'Primeiro acesso confirmado! Senha cadastrada com sucesso.',
             user: {
               id: masterProfile.id,
               username: masterProfile.username,
@@ -102,10 +123,10 @@ module.exports = async (req, res) => {
             return res.status(200).json({
               success: true,
               user: {
-                id: savedUser.id || 'usr_auth',
-                username: savedUser.username,
-                name: savedUser.name,
-                role: savedUser.role || 'guest'
+                id: savedUser.id || 'usr_guilherme_master',
+                username: savedUser.username || 'Guilherme.Otavio',
+                name: savedUser.name || 'Guilherme Otávio',
+                role: savedUser.role || (isMasterAdmin ? 'admin' : 'guest')
               }
             });
           } else {

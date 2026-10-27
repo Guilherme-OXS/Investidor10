@@ -744,11 +744,11 @@ function renderComparator() {
 // Cálculo Exato de Dias Úteis B3 (CDI Base 252) + Gráficos Empilhados (Fotos do Guilherme)
 // ==========================================================================
 function initPortfolioPage() {
-  // 1. Garante que há um usuário ativo (se não houver, autentica o Guilherme Master por padrão)
+  // 1. Garante que há um usuário ativo na sessão
   let currentUser = window.InvestAuth ? InvestAuth.getCurrentUser() : null;
-  if (!currentUser && window.InvestAuth) {
-    const defaultLogin = InvestAuth.login('guilherme', 'invest2026');
-    if (defaultLogin.success) currentUser = defaultLogin.user;
+  if (!currentUser) {
+    window.location.replace('/login');
+    return;
   }
 
   // 2. Atualiza o Título com o Nome do Proprietário da Carteira
