@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#080a11">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>InvestLucro - Acesso Exclusivo & Convidados</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;">
+
+  <div style="width: 100%; max-width: 420px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: 32px 28px; box-shadow: var(--shadow-floating);">
+    
+    <!-- BRAND LOGO -->
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
+      <div class="brand-logo" style="width: 44px; height: 44px; font-size: 18px; margin-bottom: 12px;">IL</div>
+      <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">
+        InvestLucro<span class="badge-pro" style="margin-left: 6px; font-size: 10px; vertical-align: middle;">PRO</span>
+      </h1>
+      <p style="font-size: 12.5px; color: var(--text-muted);">Acesso Restrito: Guilherme Otávio & Convidados</p>
+    </div>
+
+    <!-- ABAS ENTRAR / CONVITE -->
+    <div style="display: flex; background: var(--bg-surface-elevated); padding: 4px; border-radius: var(--radius-md); margin-bottom: 24px;">
+      <button id="tabBtnLogin" style="flex: 1; padding: 8px; border: none; background: var(--text-primary); color: var(--text-inverse); font-weight: 700; font-size: 13px; border-radius: var(--radius-sm); cursor: pointer; transition: all 150ms ease;">Entrar</button>
+      <button id="tabBtnRegister" style="flex: 1; padding: 8px; border: none; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 13px; border-radius: var(--radius-sm); cursor: pointer; transition: all 150ms ease;">Tenho Convite</button>
+    </div>
+
+    <!-- FORMULÁRIO 1: LOGIN -->
+    <form id="loginForm">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Usuário ou E-mail</label>
+        <input type="text" id="loginUsername" placeholder="ex: guilherme" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Senha de Acesso</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+      </div>
+
+      <button type="submit" style="width: 100%; padding: 12px; background: var(--emerald-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
+        Acessar Minha Carteira
+      </button>
+    </form>
+
+    <!-- FORMULÁRIO 2: CADASTRO COM CÓDIGO DE CONVITE -->
+    <form id="registerForm" style="display: none;">
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Código de Convite Autorizado</label>
+        <input type="text" id="regInviteCode" placeholder="ex: INVEST-VIP" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--emerald-500); border-radius: var(--radius-md); color: var(--emerald-400); font-size: 14px; font-weight: 700; font-family: monospace; text-transform: uppercase;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Seu Nome Completo</label>
+        <input type="text" id="regName" placeholder="ex: Carlos Silva" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Nome de Usuário (Login)</label>
+        <input type="text" id="regUsername" placeholder="ex: carlos" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Crie uma Senha</label>
+        <input type="password" id="regPassword" placeholder="••••••••" required style="width: 100%; padding: 11px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+      </div>
+
+      <button type="submit" style="width: 100%; padding: 12px; background: var(--blue-500); color: #fff; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; cursor: pointer; transition: transform 150ms ease;">
+        Validar Convite & Criar Conta
+      </button>
+    </form>
+
+    <!-- MENSAGEM DE STATUS / ERRO -->
+    <div id="authAlert" style="display: none; margin-top: 16px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12.5px; text-align: center;"></div>
+
+    <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+      <a href="/" style="font-size: 12px; color: var(--text-muted); text-decoration: none;">&larr; Voltar para a Visão Geral Pública</a>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    const tabLogin = document.getElementById('tabBtnLogin');
+    const tabRegister = document.getElementById('tabBtnRegister');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const alertBox = document.getElementById('authAlert');
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.style.background = 'var(--text-primary)';
+      tabLogin.style.color = 'var(--text-inverse)';
+      tabRegister.style.background = 'transparent';
+      tabRegister.style.color = 'var(--text-secondary)';
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'none';
+      alertBox.style.display = 'none';
+    });
+
+    tabRegister.addEventListener('click', () => {
+      tabRegister.style.background = 'var(--text-primary)';
+      tabRegister.style.color = 'var(--text-inverse)';
+      tabLogin.style.background = 'transparent';
+      tabLogin.style.color = 'var(--text-secondary)';
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'block';
+      alertBox.style.display = 'none';
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('loginUsername').value;
+      const p = document.getElementById('loginPassword').value;
+
+      const res = InvestAuth.login(u, p);
+      if (res.success) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'var(--emerald-glow)';
+        alertBox.style.color = 'var(--emerald-400)';
+        alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        alertBox.textContent = `Bem-vindo de volta, ${res.user.name}! Redirecionando...`;
+        setTimeout(() => window.location.href = '/carteira', 800);
+      } else {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'var(--rose-glow)';
+        alertBox.style.color = 'var(--rose-400)';
+        alertBox.style.border = '1px solid rgba(244, 63, 94, 0.3)';
+        alertBox.textContent = res.message;
+      }
+    });
+
+    registerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = document.getElementById('regInviteCode').value;
+      const name = document.getElementById('regName').value;
+      const u = document.getElementById('regUsername').value;
+      const p = document.getElementById('regPassword').value;
+
+      const res = InvestAuth.registerGuest(name, u, p, code);
+      if (res.success) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'var(--emerald-glow)';
+        alertBox.style.color = 'var(--emerald-400)';
+        alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        alertBox.textContent = `Conta criada com sucesso para ${res.user.name}! Redirecionando...`;
+        setTimeout(() => window.location.href = '/carteira', 800);
+      } else {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'var(--rose-glow)';
+        alertBox.style.color = 'var(--rose-400)';
+        alertBox.style.border = '1px solid rgba(244, 63, 94, 0.3)';
+        alertBox.textContent = res.message;
+      }
+    });
+  </script>
+</body>
+</html>

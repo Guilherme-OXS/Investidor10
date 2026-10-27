@@ -193,7 +193,83 @@ const FinancialCharts = {
         </div>
       </div>
     `;
+  },
+
+  /**
+   * Renderiza Gráfico de Evolução Patrimonial Empilhado: Valor Investido vs Ganho de Capital (Lucro)
+   * Inspirado no design executivo solicitado pelo Guilherme
+   * @param {string} containerId ID do container
+   * @param {Array<{label: string, invested: number, profit: number}>} data
+   */
+  renderStackedEvolutionBars(containerId, data) {
+    const container = document.getElementById(containerId);
+    if (!container || !data || data.length === 0) return;
+
+    const height = 220;
+    const vbWidth = 600;
+    const paddingX = 40;
+    const paddingTop = 25;
+    const paddingBottom = 35;
+    const chartHeight = height - paddingTop - paddingBottom;
+    const chartWidth = vbWidth - (paddingX * 2);
+
+    const totals = data.map(d => d.invested + Math.max(0, d.profit));
+    const maxVal = Math.max(...totals) * 1.15 || 1000;
+    const stepX = chartWidth / data.length;
+    const barWidth = Math.min(56, stepX * 0.55);
+
+    const bars = data.map((item, idx) => {
+      const x = paddingX + (idx * stepX) + (stepX - barWidth) / 2;
+      const total = item.invested + item.profit;
+      
+      const investedH = (item.invested / maxVal) * chartHeight;
+      const profitH = (Math.max(0, item.profit) / maxVal) * chartHeight;
+
+      const yInvested = height - paddingBottom - investedH;
+      const yProfit = yInvested - profitH;
+
+      return `
+        <g class="chart-bar-group">
+          <!-- Barra do Valor Investido (Verde Base) -->
+          <rect x="${x}" y="${yInvested}" width="${barWidth}" height="${investedH}" rx="3" fill="#10b981" opacity="0.9">
+            <title>Investido: R$ ${item.invested.toFixed(2)}</title>
+          </rect>
+
+          <!-- Barra do Ganho de Capital / Lucro (Verde Menta Topo) -->
+          ${profitH > 0 ? `
+            <rect x="${x}" y="${yProfit}" width="${barWidth}" height="${profitH}" rx="3" fill="#34d399">
+              <title>Lucro Real: +R$ ${item.profit.toFixed(2)}</title>
+            </rect>
+          ` : ''}
+
+          <!-- Rótulo do Total no topo da barra -->
+          <text x="${x + barWidth / 2}" y="${(profitH > 0 ? yProfit : yInvested) - 8}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--text-primary)" font-family="monospace">
+            R$ ${total.toFixed(0)}
+          </text>
+
+          <!-- Rótulo do Mês no Eixo X -->
+          <text x="${x + barWidth / 2}" y="${height - 12}" text-anchor="middle" font-size="11.5" fill="var(--text-muted)" font-weight="600">
+            ${item.label}
+          </text>
+        </g>
+      `;
+    }).join('');
+
+    const gridLines = `
+      <line x1="${paddingX}" y1="${height - paddingBottom}" x2="${vbWidth - paddingX}" y2="${height - paddingBottom}" stroke="var(--border-subtle)" stroke-width="1"/>
+      <line x1="${paddingX}" y1="${paddingTop + chartHeight / 2}" x2="${vbWidth - paddingX}" y2="${paddingTop + chartHeight / 2}" stroke="var(--border-subtle)" stroke-dasharray="4 4" stroke-width="1"/>
+      <text x="${paddingX - 6}" y="${paddingTop + chartHeight / 2 + 4}" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="monospace">R$ ${(maxVal / 2).toFixed(0)}</text>
+      <text x="${paddingX - 6}" y="${paddingTop + 6}" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="monospace">R$ ${maxVal.toFixed(0)}</text>
+    `;
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${vbWidth} ${height}" style="width: 100%; height: auto; display: block;">
+        ${gridLines}
+        ${bars}
+      </svg>
+    `;
   }
 };
 
 window.FinancialCharts = FinancialCharts;
+

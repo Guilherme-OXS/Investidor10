@@ -1,8 +1,10 @@
-// InvestLucro - Service Worker de Alta Performance PWA (Parte 5 - FIIs & Mobile Fix)
-const CACHE_NAME = 'investlucro-v5.0.0';
+// InvestLucro - Service Worker de Alta Performance PWA (Parte 5 - Auth & CDI Real)
+const CACHE_NAME = 'investlucro-v5.2.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/login',
+  '/login.html',
   '/radar',
   '/radar.html',
   '/comparador',
@@ -16,6 +18,8 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/css/style.css',
   '/js/data.js',
+  '/js/cdiEngine.js',
+  '/js/auth.js',
   '/js/valuation.js',
   '/js/charts.js',
   '/js/liveData.js',

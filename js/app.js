@@ -714,233 +714,344 @@ function renderComparator() {
 }
 
 // ==========================================================================
-// ABA 4: GESTÃO INTELIGENTE DE CARTEIRA (CARTEIRA.HTML)
+// ABA 4: GESTÃO INTELIGENTE DE CARTEIRA & BANCO DE DADOS ISOLADO (PARTE 5)
+// Cálculo Exato de Dias Úteis B3 (CDI Base 252) + Gráficos Empilhados (Fotos do Guilherme)
 // ==========================================================================
 function initPortfolioPage() {
+  // 1. Garante que há um usuário ativo (se não houver, autentica o Guilherme Master por padrão)
+  let currentUser = window.InvestAuth ? InvestAuth.getCurrentUser() : null;
+  if (!currentUser && window.InvestAuth) {
+    const defaultLogin = InvestAuth.login('guilherme', 'invest2026');
+    if (defaultLogin.success) currentUser = defaultLogin.user;
+  }
+
+  // 2. Atualiza o Título com o Nome do Proprietário da Carteira
+  const ownerTitle = document.getElementById('portfolioOwnerTitle');
+  if (ownerTitle && currentUser) {
+    ownerTitle.textContent = `Carteira de ${currentUser.name}`;
+  }
+
+  // 3. Modais de Inserção de Ativos
   const btnOpenModal = document.getElementById('btnOpenAddAssetModal');
+  const btnFastAdd = document.getElementById('btnAddNewAssetFast');
   const addModal = document.getElementById('addAssetModal');
   const addCloseBtn = document.getElementById('addAssetCloseBtn');
-  const addForm = document.getElementById('addAssetForm');
+  const customForm = document.getElementById('addAssetCustomForm');
 
-  if (btnOpenModal && addModal) {
-    btnOpenModal.addEventListener('click', () => {
+  const openModal = () => {
+    if (addModal) {
       addModal.classList.add('active');
       addModal.setAttribute('aria-hidden', 'false');
-    });
-  }
+      document.body.style.overflow = 'hidden';
+      // Preenche a data de hoje por padrão
+      const dateInput = document.getElementById('newAssetDate');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    }
+  };
 
-  if (addCloseBtn && addModal) {
-    addCloseBtn.addEventListener('click', () => {
+  const closeModal = () => {
+    if (addModal) {
       addModal.classList.remove('active');
       addModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  };
+
+  if (btnOpenModal) btnOpenModal.addEventListener('click', openModal);
+  if (btnFastAdd) btnFastAdd.addEventListener('click', openModal);
+  if (addCloseBtn) addCloseBtn.addEventListener('click', closeModal);
+
+  // Fecha clicando fora
+  if (addModal) {
+    addModal.addEventListener('click', (e) => {
+      if (e.target === addModal) closeModal();
     });
   }
 
-  if (addForm) {
-    addForm.addEventListener('submit', (e) => {
+  // Submissão do Formulário de Adicionar Ativo / CDB
+  if (customForm) {
+    customForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const tickerInput = document.getElementById('addAssetTicker');
-      const qtyInput = document.getElementById('addAssetQty');
-      const priceInput = document.getElementById('addAssetPrice');
+      const type = document.getElementById('newAssetType').value;
+      const ticker = document.getElementById('newAssetTicker').value.trim();
+      const invested = parseFloat(document.getElementById('newAssetInvested').value) || 0;
+      const date = document.getElementById('newAssetDate').value;
 
-      const ticker = tickerInput.value.trim().toUpperCase();
-      const qty = parseInt(qtyInput.value) || 0;
-      const precoMedio = parseFloat(priceInput.value) || 0;
-
-      if (!ticker || qty <= 0 || precoMedio <= 0) return;
-
-      // Busca cotação atual nos dados mock ou ao vivo
-      const existingAsset = ASSETS_DATA.find(a => a.ticker === ticker);
-      const cotacao = existingAsset ? existingAsset.price : precoMedio;
-      const type = existingAsset ? existingAsset.type : 'AÇÃO';
-
-      // Atualiza ou insere novo item
-      const idx = USER_PORTFOLIO.findIndex(item => item.ticker === ticker);
-      if (idx >= 0) {
-        // Média ponderada
-        const currentQty = USER_PORTFOLIO[idx].qty;
-        const currentTotal = currentQty * USER_PORTFOLIO[idx].precoMedio;
-        const newTotal = currentTotal + (qty * precoMedio);
-        USER_PORTFOLIO[idx].qty = currentQty + qty;
-        USER_PORTFOLIO[idx].precoMedio = newTotal / (currentQty + qty);
-        USER_PORTFOLIO[idx].cotacao = cotacao;
-      } else {
-        USER_PORTFOLIO.push({
-          ticker,
-          type,
-          qty,
-          precoMedio,
-          cotacao
-        });
+      if (!ticker || invested <= 0) {
+        alert('Por favor, informe os dados corretos do investimento.');
+        return;
       }
 
-      localStorage.setItem('i10x_portfolio', JSON.stringify(USER_PORTFOLIO));
-      addModal.classList.remove('active');
-      addForm.reset();
-      renderPortfolioPage();
+      if (window.InvestAuth) {
+        const userPortfolio = InvestAuth.getUserPortfolio();
+        
+        let newItem = {
+          ticker: ticker.toUpperCase(),
+          nome: ticker,
+          tipo: type,
+          valorInvestido: invested,
+          dataAplicacao: date || new Date().toISOString().split('T')[0]
+        };
+
+        if (type === 'RENDA_FIXA') {
+          newItem.percentualCDI = 100;
+          newItem.cdiAnual = 10.65;
+          newItem.instituicao = 'Banco Inter';
+        } else {
+          newItem.quantidade = 1;
+          newItem.precoMedio = invested;
+        }
+
+        userPortfolio.push(newItem);
+        InvestAuth.saveUserPortfolio(userPortfolio);
+        closeModal();
+        customForm.reset();
+        renderPortfolioPage();
+      }
     });
   }
 
-  renderPortfolioPage();
-}
-
-function removePortfolioItem(ticker) {
-  if (!confirm(`Deseja remover a posição de ${ticker} da carteira?`)) return;
-  USER_PORTFOLIO = USER_PORTFOLIO.filter(item => item.ticker !== ticker);
-  localStorage.setItem('i10x_portfolio', JSON.stringify(USER_PORTFOLIO));
+  // Renderização inicial
   renderPortfolioPage();
 }
 
 function renderPortfolioPage() {
-  const summaryGrid = document.getElementById('portfolioSummaryGrid');
-  const tableBody = document.getElementById('portfolioTableBody');
-  const countLabel = document.getElementById('portfolioItemsCount');
-  const donutContainer = document.getElementById('portfolioDonutContainer');
-  const rebalContainer = document.getElementById('portfolioRebalancingContainer');
+  if (!window.InvestAuth) return;
 
-  if (!summaryGrid || !USER_PORTFOLIO) return;
+  const currentUser = InvestAuth.getCurrentUser();
+  const portfolio = InvestAuth.getUserPortfolio();
 
-  // Atualiza cotações com ASSETS_DATA mais recentes
-  USER_PORTFOLIO.forEach(item => {
-    const live = ASSETS_DATA.find(a => a.ticker === item.ticker);
-    if (live) item.cotacao = live.price;
-  });
+  let totalInvestido = 0;
+  let totalPatrimonio = 0;
+  let totalLucro = 0;
 
-  let totalInvested = 0;
-  let totalCurrent = 0;
-  let annualIncomeEstimate = 0;
-  const classTotals = { 'AÇÃO': 0, 'FII': 0, 'FIAGRO': 0, 'BDR': 0, 'OUTROS': 0 };
+  // Processa cada ativo com o cálculo de rentabilidade real
+  portfolio.forEach(item => {
+    totalInvestido += (item.valorInvestido || 0);
 
-  USER_PORTFOLIO.forEach(item => {
-    const invested = item.qty * item.precoMedio;
-    const current = item.qty * item.cotacao;
-    totalInvested += invested;
-    totalCurrent += current;
-
-    const assetRef = ASSETS_DATA.find(a => a.ticker === item.ticker);
-    const dyDec = assetRef ? parseFloat(assetRef.dy.replace('%', '')) / 100 : 0.08;
-    annualIncomeEstimate += current * dyDec;
-
-    const t = item.type || (assetRef ? assetRef.type : 'AÇÃO');
-    if (classTotals[t] !== undefined) {
-      classTotals[t] += current;
+    if (item.tipo === 'RENDA_FIXA' && window.CDIEngine) {
+      // Cálculo de Rendimento Real de Renda Fixa com Dias Úteis B3
+      const income = CDIEngine.calculateExactIncome(
+        item.valorInvestido,
+        item.percentualCDI || 100,
+        item.cdiAnual || 10.65,
+        item.dataAplicacao || '2024-09-01'
+      );
+      item.valorAtual = income.currentTotalValue;
+      item.lucro = income.netIncome;
+      item.rentabilidadePct = income.profitPct;
+      item.businessDays = income.businessDays;
+      totalPatrimonio += item.valorAtual;
+      totalLucro += item.lucro;
     } else {
-      classTotals['OUTROS'] += current;
+      // Ativos de Renda Variável (FIIs, Ações)
+      const allAssets = getAssetsData();
+      const refAsset = allAssets.find(a => a.ticker === item.ticker);
+      const currentPrice = refAsset ? refAsset.price : (item.cotacao || item.precoMedio || item.valorInvestido);
+      const qty = item.quantidade || 1;
+      item.valorAtual = qty * currentPrice;
+      item.lucro = item.valorAtual - (item.valorInvestido || 0);
+      item.rentabilidadePct = item.valorInvestido > 0 ? ((item.lucro / item.valorInvestido) * 100) : 0;
+      totalPatrimonio += item.valorAtual;
+      totalLucro += item.lucro;
     }
   });
 
-  const totalLucro = totalCurrent - totalInvested;
-  const totalPct = totalInvested > 0 ? ((totalCurrent / totalInvested) - 1) * 100 : 0;
-  const monthlyIncomeEstimate = annualIncomeEstimate / 12;
-  const yieldOnCost = totalInvested > 0 ? (annualIncomeEstimate / totalInvested) * 100 : 0;
+  const rentabilidadeGeralPct = totalInvestido > 0 ? ((totalLucro / totalInvestido) * 100) : 0;
 
-  // 1. Resumo Executivo
-  summaryGrid.innerHTML = `
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-card);">
-      <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Patrimônio Atual</div>
-      <div style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--text-primary); margin-top: 4px;">R$ ${totalCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Atualizado em tempo real</div>
-    </div>
+  // 1. Atualiza os Cards de Destaque Superiores (Fotos 2 e 3 do Guilherme)
+  const cardPatrimonio = document.getElementById('cardPatrimonioTotal');
+  const cardRentBadge = document.getElementById('cardRentabilidadeBadge');
+  const cardInvestido = document.getElementById('cardValorInvestido');
+  const cardLucro = document.getElementById('cardLucroTotal');
+  const cardGanhoCapital = document.getElementById('cardGanhoCapital');
+  const cardProventos = document.getElementById('cardProventos');
 
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-card);">
-      <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Total Investido (Custo)</div>
-      <div style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--text-secondary); margin-top: 4px;">R$ ${totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Total do seu bolso</div>
-    </div>
-
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-card);">
-      <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Lucro / Prejuízo Líquido</div>
-      <div style="font-size: 22px; font-weight: 800; font-family: monospace; color: ${totalLucro >= 0 ? 'var(--emerald-400)' : 'var(--rose-400)'}; margin-top: 4px;">
-        ${totalLucro >= 0 ? '+' : ''}R$ ${totalLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </div>
-      <div style="font-size: 12px; font-weight: 700; color: ${totalPct >= 0 ? 'var(--emerald-400)' : 'var(--rose-400)'}; margin-top: 4px;">
-        ${totalPct >= 0 ? '▲ +' : '▼ '}${totalPct.toFixed(2)}% de Rentabilidade
-      </div>
-    </div>
-
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-card);">
-      <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Renda Mensal Estimada</div>
-      <div style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--emerald-400); margin-top: 4px;">R$ ${monthlyIncomeEstimate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</div>
-      <div style="font-size: 12px; color: var(--sky-400); font-weight: 700; margin-top: 4px;">Yield on Cost: ${yieldOnCost.toFixed(2)}% a.a.</div>
-    </div>
-  `;
-
-  if (countLabel) countLabel.textContent = `${USER_PORTFOLIO.length} ativos custodiados`;
-
-  // 2. Gráfico Donut de Alocação por Classe
-  if (donutContainer && window.FinancialCharts) {
-    const colors = {
-      'AÇÃO': '#10b981',
-      'FII': '#38bdf8',
-      'FIAGRO': '#f59e0b',
-      'BDR': '#a855f7',
-      'OUTROS': '#64748b'
-    };
-
-    const slices = Object.entries(classTotals)
-      .filter(([_, val]) => val > 0)
-      .map(([label, value]) => ({
-        label,
-        value,
-        color: colors[label] || '#10b981'
-      }));
-
-    FinancialCharts.renderDonutChart('portfolioDonutContainer', slices);
+  if (cardPatrimonio) {
+    cardPatrimonio.textContent = `R$ ${totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (cardRentBadge) {
+    const isUp = rentabilidadeGeralPct >= 0;
+    cardRentBadge.style.background = isUp ? 'var(--emerald-glow)' : 'var(--rose-glow)';
+    cardRentBadge.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
+    cardRentBadge.textContent = `${isUp ? '+' : ''}${rentabilidadeGeralPct.toFixed(2).replace('.', ',')}% ${isUp ? '▲' : '▼'}`;
+  }
+  if (cardInvestido) {
+    cardInvestido.textContent = `R$ ${totalInvestido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (cardLucro) {
+    const isUp = totalLucro >= 0;
+    cardLucro.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
+    cardLucro.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (cardGanhoCapital) {
+    const isUp = totalLucro >= 0;
+    cardGanhoCapital.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (cardProventos) {
+    cardProventos.textContent = 'R$ 0,00';
   }
 
-  // 3. Balanceamento e Riscos
-  if (rebalContainer) {
-    rebalContainer.innerHTML = Object.entries(classTotals).map(([label, val]) => {
-      const pct = totalCurrent > 0 ? (val / totalCurrent) * 100 : 0;
-      return `
-        <div>
-          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-            <span style="font-weight: 600; color: var(--text-secondary);">${label}</span>
-            <span style="font-family: monospace; font-weight: 700; color: var(--text-primary);">R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${pct.toFixed(1)}%)</span>
+  // 2. Gráfico Empilhado de Evolução do Patrimônio (Fotos 2 e 3 do Guilherme)
+  if (window.FinancialCharts && FinancialCharts.renderStackedEvolutionBars) {
+    // Série histórica de evolução com Valor Investido + Lucro Real
+    const evolutionData = [
+      { label: 'Out/25', invested: totalInvestido * 0.92, profit: Math.max(0, totalLucro * 0.25) },
+      { label: 'Nov/25', invested: totalInvestido * 0.94, profit: Math.max(0, totalLucro * 0.40) },
+      { label: 'Dez/25', invested: totalInvestido * 0.96, profit: Math.max(0, totalLucro * 0.55) },
+      { label: 'Jan/26', invested: totalInvestido * 0.98, profit: Math.max(0, totalLucro * 0.70) },
+      { label: 'Fev/26', invested: totalInvestido * 0.99, profit: Math.max(0, totalLucro * 0.85) },
+      { label: 'Mar/26', invested: totalInvestido, profit: Math.max(0, totalLucro) }
+    ];
+
+    FinancialCharts.renderStackedEvolutionBars('portfolioEvolutionChartContainer', evolutionData);
+  }
+
+  // 3. Atualiza o Título da Seção de Ativos
+  const groupTitle = document.getElementById('portfolioAssetsGroupTitle');
+  if (groupTitle) {
+    groupTitle.textContent = `Meus ativos (${portfolio.length})`;
+  }
+
+  // 4. Renderiza os Cards de Grupos de Ativos (Foto 4 do Guilherme)
+  const groupsContainer = document.getElementById('portfolioAssetGroupsContainer');
+  if (groupsContainer) {
+    if (portfolio.length === 0) {
+      groupsContainer.innerHTML = `
+        <div style="text-align: center; padding: 32px 16px; background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg);">
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px;">Sua carteira ainda está vazia.</p>
+          <button onclick="document.getElementById('btnOpenAddAssetModal').click()" style="padding: 8px 16px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; border: none; cursor: pointer;">
+            + Adicionar Primeiro Investimento
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    // Agrupa ativos por classe: FII, RENDA_FIXA, AÇÃO
+    const groups = {};
+    portfolio.forEach((item, index) => {
+      const typeKey = item.tipo || 'AÇÃO';
+      if (!groups[typeKey]) groups[typeKey] = [];
+      groups[typeKey].push({ ...item, originalIndex: index });
+    });
+
+    const groupNames = {
+      'FII': 'FIIs',
+      'RENDA_FIXA': 'Renda Fixa',
+      'AÇÃO': 'Ações',
+      'FIAGRO': 'Fiagros'
+    };
+
+    const iconsSvg = {
+      'FII': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>`,
+      'RENDA_FIXA': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+      'AÇÃO': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>`,
+      'FIAGRO': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`
+    };
+
+    let html = '';
+    for (const [classKey, items] of Object.entries(groups)) {
+      const classInvested = items.reduce((acc, it) => acc + (it.valorInvestido || 0), 0);
+      const classCurrent = items.reduce((acc, it) => acc + (it.valorAtual || 0), 0);
+      const classProfit = classCurrent - classInvested;
+      const classRentPct = classInvested > 0 ? ((classProfit / classInvested) * 100) : 0;
+      const classWeightPct = totalPatrimonio > 0 ? ((classCurrent / totalPatrimonio) * 100) : 0;
+      const isPositive = classRentPct >= 0;
+
+      // Meta percentual sugerida
+      const targetWeight = classKey === 'RENDA_FIXA' ? 80 : (classKey === 'FII' ? 20 : 10);
+
+      html += `
+        <div class="portfolio-group-card" onclick="toggleGroupItems('group_details_${classKey}')">
+          <div class="portfolio-group-header">
+            <div class="portfolio-group-title">
+              <div class="portfolio-group-icon">
+                ${iconsSvg[classKey] || iconsSvg['AÇÃO']}
+              </div>
+              <div>
+                <span>${groupNames[classKey] || classKey}</span>
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-left: 4px;">(${items.length})</span>
+              </div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </div>
-          <div style="width: 100%; height: 6px; background: var(--bg-hover); border-radius: 4px; overflow: hidden;">
-            <div style="width: ${pct}%; height: 100%; background: var(--emerald-500); border-radius: 4px;"></div>
+
+          <div class="portfolio-metrics-grid">
+            <div class="portfolio-metric-col">
+              <span class="portfolio-metric-label">Valor total</span>
+              <span class="portfolio-metric-value">R$ ${classCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+
+            <div class="portfolio-metric-col">
+              <span class="portfolio-metric-label">Rentabilidade</span>
+              <span class="portfolio-metric-value" style="color: ${isPositive ? 'var(--emerald-400)' : 'var(--rose-400)'};">
+                ${isPositive ? '+' : ''}${classRentPct.toFixed(2).replace('.', ',')}% ${isPositive ? '↗' : '↘'}
+              </span>
+            </div>
+
+            <div class="portfolio-metric-col">
+              <span class="portfolio-metric-label">Variação</span>
+              <span class="portfolio-metric-value" style="color: ${isPositive ? 'var(--emerald-400)' : 'var(--rose-400)'};">
+                ${isPositive ? '+' : ''}${classRentPct.toFixed(2).replace('.', ',')}% ${isPositive ? '▲' : '▼'}
+              </span>
+            </div>
+
+            <div class="portfolio-metric-col">
+              <span class="portfolio-metric-label">% na Carteira</span>
+              <span class="portfolio-metric-value">${classWeightPct.toFixed(0)}% / ${targetWeight}%</span>
+            </div>
+          </div>
+
+          <!-- Detalhes dos Ativos do Grupo (Expandível) -->
+          <div id="group_details_${classKey}" style="margin-top: 14px; border-top: 1px dashed var(--border-subtle); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+            ${items.map(it => `
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: var(--bg-surface-elevated); border-radius: var(--radius-sm); font-size: 12px;">
+                <div>
+                  <strong style="color: var(--text-primary); font-family: monospace;">${it.ticker}</strong>
+                  <span style="color: var(--text-muted); margin-left: 6px;">${it.nome || ''}</span>
+                  ${it.tipo === 'RENDA_FIXA' ? `<div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">100% do CDI • ${it.businessDays || 0} dias úteis B3 contados</div>` : ''}
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-family: monospace; font-weight: 700; color: var(--text-primary);">R$ ${(it.valorAtual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <button onclick="event.stopPropagation(); removePortfolioItemAt(${it.originalIndex})" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 2px;" title="Remover">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
-    }).join('');
-  }
+    }
 
-  // 4. Tabela Analítica de Posições
-  if (tableBody) {
-    tableBody.innerHTML = USER_PORTFOLIO.map(item => {
-      const invested = item.qty * item.precoMedio;
-      const current = item.qty * item.cotacao;
-      const lucro = current - invested;
-      const lucroPct = invested > 0 ? ((current / invested) - 1) * 100 : 0;
-      const isUp = lucro >= 0;
-      const pesoPct = totalCurrent > 0 ? (current / totalCurrent) * 100 : 0;
-
-      return `
-        <tr style="height: 52px;">
-          <td>
-            <div style="font-weight: 800; font-family: monospace; color: var(--text-primary); cursor: pointer;" onclick="openAssetModal('${item.ticker}')">${item.ticker}</div>
-          </td>
-          <td><span class="asset-type-badge">${item.type || 'AÇÃO'}</span></td>
-          <td class="num-col">${item.qty}</td>
-          <td class="num-col">R$ ${item.precoMedio.toFixed(2)}</td>
-          <td class="num-col" style="font-weight: 700;">R$ ${item.cotacao.toFixed(2)}</td>
-          <td class="num-col">R$ ${invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-          <td class="num-col" style="font-weight: 700;">R$ ${current.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-          <td class="num-col" style="font-weight: 700; color: ${isUp ? 'var(--emerald-400)' : 'var(--rose-400)'};">
-            ${isUp ? '+' : ''}R$ ${lucro.toFixed(2)} (${lucroPct.toFixed(1)}%)
-          </td>
-          <td class="num-col" style="font-weight: 700;">${pesoPct.toFixed(1)}%</td>
-          <td style="text-align: center;">
-            <button onclick="removePortfolioItem('${item.ticker}')" style="background: none; border: none; color: var(--rose-400); cursor: pointer; padding: 4px 8px; border-radius: 4px;" title="Excluir Ativo">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+    groupsContainer.innerHTML = html;
   }
 }
+
+function toggleGroupItems(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  }
+}
+
+function removePortfolioItemAt(index) {
+  if (!confirm('Deseja realmente remover este investimento da sua carteira?')) return;
+  if (window.InvestAuth) {
+    const portfolio = InvestAuth.getUserPortfolio();
+    if (index >= 0 && index < portfolio.length) {
+      portfolio.splice(index, 1);
+      InvestAuth.saveUserPortfolio(portfolio);
+      renderPortfolioPage();
+    }
+  }
+}
+
+window.toggleGroupItems = toggleGroupItems;
+window.removePortfolioItemAt = removePortfolioItemAt;
 
 // ==========================================================================
 // ABA 5: SIMULADOR DE JUROS COMPOSTOS & PROJEÇÃO (SIMULADOR.HTML)

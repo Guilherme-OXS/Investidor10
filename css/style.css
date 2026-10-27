@@ -1271,17 +1271,38 @@ body {
   }
 
   .header-actions {
-    gap: 6px;
+    gap: 5px;
+    flex-shrink: 0;
   }
 
   .market-status-pill {
-    padding: 4px 8px;
-    font-size: 11px;
-    gap: 6px;
+    padding: 3px 6px;
+    font-size: 10px;
+    gap: 4px;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    max-height: 26px;
+  }
+
+  .btn-pwa-install {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+
+  .btn-pwa-install span {
+    display: none !important;
   }
 
   .btn-sync-quotes {
-    padding: 6px 8px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .btn-sync-quotes span {
@@ -1291,6 +1312,7 @@ body {
   .btn-icon {
     width: 32px;
     height: 32px;
+    flex-shrink: 0;
   }
 
   .ticker-ribbon {
@@ -1482,5 +1504,102 @@ body {
 .compare-tag button:hover {
   color: var(--rose-400);
 }
+
+/* ==========================================================================
+   CARTEIRA EXECUTIVA & ATIVOS (PARTE 5)
+   ========================================================================== */
+.portfolio-group-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+  transition: all 180ms var(--ease-spring);
+  cursor: pointer;
+}
+.portfolio-group-card:hover {
+  border-color: var(--border-glass);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.portfolio-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.portfolio-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.portfolio-group-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.portfolio-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+
+.portfolio-metric-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.portfolio-metric-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.portfolio-metric-value {
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .portfolio-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-header {
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .market-status-pill {
+    max-width: 85px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 2px 4px;
+    font-size: 9.5px;
+  }
+  .btn-pwa-install {
+    display: none !important;
+  }
+}
+
 
 
