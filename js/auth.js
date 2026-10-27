@@ -106,8 +106,8 @@ const InvestAuth = {
     try {
       const res = await fetch(`/api/portfolio?username=${encodeURIComponent(username)}`);
       const data = await res.json();
-      if (data && data.success && Array.isArray(data.portfolio) && data.portfolio.length > 0) {
-        localStorage.setItem(`investlucro_portfolio_${username}`, JSON.stringify(data.portfolio));
+      if (data && data.success && Array.isArray(data.portfolio)) {
+        localStorage.setItem(`investlucro_portfolio_${username.toLowerCase()}`, JSON.stringify(data.portfolio));
         return data.portfolio;
       }
     } catch (e) {
@@ -152,6 +152,52 @@ const InvestAuth = {
     return { success: false, message: 'Código de convite VIP inválido ou erro de conexão.' };
   },
 
+  // Gestão Exclusiva de Convites VIP (Área do Administrador Guilherme)
+  async getAdminInvites() {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') return [];
+    try {
+      const res = await fetch(`/api/auth?action=get_invites&requester=${encodeURIComponent(currentUser.username)}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.invites)) {
+        return data.invites;
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar convites:', e);
+    }
+    return [];
+  },
+
+  async createAdminInvite(code) {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') return { success: false, message: 'Acesso restrito ao administrador.' };
+    try {
+      const res = await fetch('/api/auth?action=create_invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requester: currentUser.username, code })
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, message: 'Erro de conexão ao criar convite.' };
+    }
+  },
+
+  async deleteAdminInvite(code) {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') return { success: false, message: 'Acesso restrito ao administrador.' };
+    try {
+      const res = await fetch('/api/auth?action=delete_invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requester: currentUser.username, code })
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, message: 'Erro de conexão ao excluir convite.' };
+    }
+  },
+
   // Gerenciamento da Carteira do Usuário Logado
   getUserPortfolio() {
     const currentUser = this.getCurrentUser();
@@ -162,15 +208,14 @@ const InvestAuth = {
     const stored = localStorage.getItem(storageKey);
 
     if (stored) {
-      return JSON.parse(stored);
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return [];
+      }
     }
 
-    // Se for o Guilherme (Guilherme.Otavio), inicia com a carteira real do extrato
-    if (u === 'guilherme.otavio' || u === 'guilherme') {
-      localStorage.setItem(storageKey, JSON.stringify(GUILHERME_INITIAL_PORTFOLIO));
-      return GUILHERME_INITIAL_PORTFOLIO;
-    }
-
+    // A carteira começa vazia por padrão ([]). O usuário adiciona seus próprios ativos.
     return [];
   },
 
@@ -186,5 +231,4 @@ const InvestAuth = {
 
 if (typeof window !== 'undefined') {
   window.InvestAuth = InvestAuth;
-  window.GUILHERME_INITIAL_PORTFOLIO = GUILHERME_INITIAL_PORTFOLIO;
 }

@@ -764,6 +764,152 @@ function initPortfolioPage() {
   const addCloseBtn = document.getElementById('addAssetCloseBtn');
   const customForm = document.getElementById('addAssetCustomForm');
 
+  // Gestão Exclusiva de Convites VIP (Guilherme Otávio)
+  const btnInvite = document.getElementById('btnOpenInviteModal');
+  const inviteModal = document.getElementById('adminInviteModal');
+  const inviteCloseBtn = document.getElementById('adminInviteCloseBtn');
+  const btnGenRandom = document.getElementById('btnGenerateRandomInvite');
+  const btnSaveInvite = document.getElementById('btnSaveNewInvite');
+  const inputInvite = document.getElementById('newInviteCodeInput');
+  const invitesContainer = document.getElementById('adminInvitesListContainer');
+  const toastFeedback = document.getElementById('inviteFeedbackToast');
+  const countBadge = document.getElementById('invitesCountBadge');
+
+  const showInviteToast = (msg, isError = false) => {
+    if (!toastFeedback) return;
+    toastFeedback.style.display = 'block';
+    toastFeedback.style.background = isError ? 'var(--rose-glow)' : 'var(--emerald-glow)';
+    toastFeedback.style.color = isError ? 'var(--rose-400)' : 'var(--emerald-400)';
+    toastFeedback.style.border = `1px solid ${isError ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`;
+    toastFeedback.textContent = msg;
+    setTimeout(() => { if (toastFeedback) toastFeedback.style.display = 'none'; }, 3500);
+  };
+
+  const renderInvitesList = async () => {
+    if (!invitesContainer || !window.InvestAuth) return;
+    invitesContainer.innerHTML = '<div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px;">Carregando convites da nuvem...</div>';
+    
+    const invites = await InvestAuth.getAdminInvites();
+    if (countBadge) countBadge.textContent = `${invites.length} convite(s)`;
+
+    if (invites.length === 0) {
+      invitesContainer.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">Nenhum convite cadastrado ainda.</div>';
+      return;
+    }
+
+    invitesContainer.innerHTML = invites.map(inv => {
+      const isUsed = inv.usedBy && inv.usedBy.length > 0;
+      const dateStr = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('pt-BR') : '';
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: monospace; font-size: 13.5px; font-weight: 800; color: var(--emerald-400); letter-spacing: 0.5px;">${inv.code}</span>
+              ${isUsed ? '<span style="font-size: 10px; background: rgba(59,130,246,0.15); color: var(--blue-400); padding: 1px 5px; border-radius: 3px;">Utilizado</span>' : '<span style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--emerald-400); padding: 1px 5px; border-radius: 3px;">Disponível</span>'}
+            </div>
+            <div style="font-size: 10.5px; color: var(--text-muted);">
+              ${isUsed ? `Usado por: <strong>${inv.usedBy[0].name || inv.usedBy[0].username}</strong>` : `Criado em: ${dateStr}`}
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-copy-invite" data-code="${inv.code}" style="padding: 5px 9px; font-size: 11.5px; font-weight: 700; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary); cursor: pointer;" title="Copiar código">
+              Copiar
+            </button>
+            <button class="btn-delete-invite" data-code="${inv.code}" style="padding: 5px 8px; font-size: 11.5px; font-weight: 700; background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.25); border-radius: 4px; color: var(--rose-400); cursor: pointer;" title="Revogar convite">
+              ✕
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Eventos de Copiar e Excluir
+    invitesContainer.querySelectorAll('.btn-copy-invite').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const c = btn.getAttribute('data-code');
+        navigator.clipboard.writeText(c).then(() => {
+          showInviteToast(`Código ${c} copiado para a área de transferência!`);
+        });
+      });
+    });
+
+    invitesContainer.querySelectorAll('.btn-delete-invite').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const c = btn.getAttribute('data-code');
+        if (confirm(`Deseja realmente revogar o convite ${c}?`)) {
+          const res = await InvestAuth.deleteAdminInvite(c);
+          if (res.success) {
+            showInviteToast(`Convite ${c} revogado.`);
+            renderInvitesList();
+          } else {
+            showInviteToast(res.message || 'Erro ao revogar convite.', true);
+          }
+        }
+      });
+    });
+  };
+
+  if (currentUser && currentUser.role === 'admin' && btnInvite) {
+    btnInvite.style.display = 'inline-flex';
+    btnInvite.addEventListener('click', () => {
+      if (inviteModal) {
+        inviteModal.style.display = 'flex';
+        inviteModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        renderInvitesList();
+      }
+    });
+  }
+
+  if (inviteCloseBtn && inviteModal) {
+    inviteCloseBtn.addEventListener('click', () => {
+      inviteModal.style.display = 'none';
+      inviteModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    });
+
+    inviteModal.addEventListener('click', (e) => {
+      if (e.target === inviteModal) {
+        inviteModal.style.display = 'none';
+        inviteModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
+  if (btnGenRandom && inputInvite) {
+    btnGenRandom.addEventListener('click', () => {
+      const prefixes = ['VIP', 'INVEST', 'LUCRO', 'B3'];
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      const num = Math.floor(1000 + Math.random() * 9000);
+      inputInvite.value = `${prefix}-${num}`;
+    });
+  }
+
+  if (btnSaveInvite && inputInvite) {
+    btnSaveInvite.addEventListener('click', async () => {
+      const code = inputInvite.value.trim().toUpperCase();
+      if (!code) {
+        showInviteToast('Digite um código ou clique em Gerar.', true);
+        return;
+      }
+      btnSaveInvite.disabled = true;
+      btnSaveInvite.textContent = 'Salvando na nuvem...';
+
+      const res = await InvestAuth.createAdminInvite(code);
+      btnSaveInvite.disabled = false;
+      btnSaveInvite.textContent = 'Ativar Código VIP no Banco';
+
+      if (res.success) {
+        showInviteToast(res.message || 'Convite criado com sucesso!');
+        inputInvite.value = '';
+        renderInvitesList();
+      } else {
+        showInviteToast(res.message || 'Erro ao criar convite.', true);
+      }
+    });
+  }
+
   const openModal = () => {
     if (addModal) {
       addModal.classList.add('active');
@@ -899,40 +1045,64 @@ function renderPortfolioPage() {
     cardPatrimonio.textContent = `R$ ${totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   if (cardRentBadge) {
-    const isUp = rentabilidadeGeralPct >= 0;
-    cardRentBadge.style.background = isUp ? 'var(--emerald-glow)' : 'var(--rose-glow)';
-    cardRentBadge.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
-    cardRentBadge.textContent = `${isUp ? '+' : ''}${rentabilidadeGeralPct.toFixed(2).replace('.', ',')}% ${isUp ? '▲' : '▼'}`;
+    if (totalInvestido === 0) {
+      cardRentBadge.style.background = 'rgba(16, 185, 129, 0.12)';
+      cardRentBadge.style.color = 'var(--emerald-400)';
+      cardRentBadge.textContent = '0,00%';
+    } else {
+      const isUp = rentabilidadeGeralPct >= 0;
+      cardRentBadge.style.background = isUp ? 'var(--emerald-glow)' : 'var(--rose-glow)';
+      cardRentBadge.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
+      cardRentBadge.textContent = `${isUp ? '+' : ''}${rentabilidadeGeralPct.toFixed(2).replace('.', ',')}% ${isUp ? '▲' : '▼'}`;
+    }
   }
   if (cardInvestido) {
     cardInvestido.textContent = `R$ ${totalInvestido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   if (cardLucro) {
-    const isUp = totalLucro >= 0;
-    cardLucro.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
-    cardLucro.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (totalInvestido === 0) {
+      cardLucro.style.color = 'var(--emerald-400)';
+      cardLucro.textContent = 'R$ 0,00';
+    } else {
+      const isUp = totalLucro >= 0;
+      cardLucro.style.color = isUp ? 'var(--emerald-400)' : 'var(--rose-400)';
+      cardLucro.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
   }
   if (cardGanhoCapital) {
-    const isUp = totalLucro >= 0;
-    cardGanhoCapital.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (totalInvestido === 0) {
+      cardGanhoCapital.textContent = 'R$ 0,00';
+    } else {
+      const isUp = totalLucro >= 0;
+      cardGanhoCapital.textContent = `${isUp ? '+' : '-'} R$ ${Math.abs(totalLucro).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
   }
   if (cardProventos) {
     cardProventos.textContent = 'R$ 0,00';
   }
 
   // 2. Gráfico Empilhado de Evolução do Patrimônio (Fotos 2 e 3 do Guilherme)
-  if (window.FinancialCharts && FinancialCharts.renderStackedEvolutionBars) {
-    // Série histórica de evolução com Valor Investido + Lucro Real
-    const evolutionData = [
-      { label: 'Out/25', invested: totalInvestido * 0.92, profit: Math.max(0, totalLucro * 0.25) },
-      { label: 'Nov/25', invested: totalInvestido * 0.94, profit: Math.max(0, totalLucro * 0.40) },
-      { label: 'Dez/25', invested: totalInvestido * 0.96, profit: Math.max(0, totalLucro * 0.55) },
-      { label: 'Jan/26', invested: totalInvestido * 0.98, profit: Math.max(0, totalLucro * 0.70) },
-      { label: 'Fev/26', invested: totalInvestido * 0.99, profit: Math.max(0, totalLucro * 0.85) },
-      { label: 'Mar/26', invested: totalInvestido, profit: Math.max(0, totalLucro) }
-    ];
-
-    FinancialCharts.renderStackedEvolutionBars('portfolioEvolutionChartContainer', evolutionData);
+  const chartContainer = document.getElementById('portfolioEvolutionChartContainer');
+  if (chartContainer) {
+    if (totalInvestido === 0) {
+      chartContainer.innerHTML = `
+        <div style="text-align: center; padding: 42px 16px; color: var(--text-muted);">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 10px; opacity: 0.4;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <p style="font-size: 13.5px; font-weight: 600; margin-bottom: 4px; color: var(--text-secondary);">Gráfico de Evolução Aguardando Dados</p>
+          <p style="font-size: 12px; max-width: 360px; margin: 0 auto;">Adicione seus investimentos pelo botão <strong>+</strong> acima para acompanhar a evolução do patrimônio e lucro mês a mês.</p>
+        </div>
+      `;
+    } else if (window.FinancialCharts && FinancialCharts.renderStackedEvolutionBars) {
+      const evolutionData = [
+        { label: 'Out/25', invested: totalInvestido * 0.92, profit: Math.max(0, totalLucro * 0.25) },
+        { label: 'Nov/25', invested: totalInvestido * 0.94, profit: Math.max(0, totalLucro * 0.40) },
+        { label: 'Dez/25', invested: totalInvestido * 0.96, profit: Math.max(0, totalLucro * 0.55) },
+        { label: 'Jan/26', invested: totalInvestido * 0.98, profit: Math.max(0, totalLucro * 0.70) },
+        { label: 'Fev/26', invested: totalInvestido * 0.99, profit: Math.max(0, totalLucro * 0.85) },
+        { label: 'Mar/26', invested: totalInvestido, profit: Math.max(0, totalLucro) }
+      ];
+      FinancialCharts.renderStackedEvolutionBars('portfolioEvolutionChartContainer', evolutionData);
+    }
   }
 
   // 3. Atualiza o Título da Seção de Ativos
@@ -946,13 +1116,23 @@ function renderPortfolioPage() {
   if (groupsContainer) {
     if (portfolio.length === 0) {
       groupsContainer.innerHTML = `
-        <div style="text-align: center; padding: 32px 16px; background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg);">
-          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px;">Sua carteira ainda está vazia.</p>
-          <button onclick="document.getElementById('btnOpenAddAssetModal').click()" style="padding: 8px 16px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; border: none; cursor: pointer;">
-            + Adicionar Primeiro Investimento
+        <div style="text-align: center; padding: 40px 20px; background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg);">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); color: var(--emerald-400); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Sua carteira está pronta</h3>
+          <p style="font-size: 12.5px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px; line-height: 1.5;">Você não possui nenhum ativo por padrão. Adicione seus CDBs, FIIs ou ações para começar a calcular seus rendimentos reais.</p>
+          <button id="btnEmptyAddAsset" style="padding: 10px 20px; border-radius: var(--radius-sm); background: var(--emerald-500); color: #fff; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Adicionar Primeiro Ativo</span>
           </button>
         </div>
       `;
+
+      const emptyBtn = document.getElementById('btnEmptyAddAsset');
+      if (emptyBtn && btnOpenModal) {
+        emptyBtn.addEventListener('click', () => btnOpenModal.click());
+      }
       return;
     }
 

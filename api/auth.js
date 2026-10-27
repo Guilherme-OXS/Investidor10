@@ -144,7 +144,25 @@ module.exports = async (req, res) => {
       const { name, username, password, inviteCode } = req.body || {};
       
       const code = (inviteCode || '').trim().toUpperCase();
-      if (!code || !AUTHORIZED_INVITES.includes(code)) {
+      let customInvites = [];
+      if (kvUrl && kvToken) {
+        try {
+          const invRes = await fetch(`${kvUrl}/get/investlucro:invites`, {
+            headers: { Authorization: `Bearer ${kvToken}` }
+          });
+          const invData = await invRes.json();
+          if (invData && invData.result) {
+            customInvites = typeof invData.result === 'string' ? JSON.parse(invData.result) : invData.result;
+          }
+        } catch (e) {
+          console.warn('Erro ao verificar convites em nuvem:', e);
+        }
+      }
+
+      const isCustomValid = Array.isArray(customInvites) && customInvites.some(i => i.code === code && i.status === 'active');
+      const isDefaultValid = AUTHORIZED_INVITES.includes(code);
+
+      if (!code || (!isCustomValid && !isDefaultValid)) {
         return res.status(403).json({ success: false, message: 'Código de convite VIP inválido ou não autorizado.' });
       }
 
@@ -175,6 +193,26 @@ module.exports = async (req, res) => {
           },
           body: JSON.stringify(guestUser)
         });
+
+        // Se foi convite customizado, registra quem usou
+        if (isCustomValid) {
+          const updatedInvites = customInvites.map(inv => {
+            if (inv.code === code) {
+              const usedList = inv.usedBy || [];
+              usedList.push({ username: u, name: name.trim(), date: new Date().toISOString() });
+              return { ...inv, usedBy: usedList, timesUsed: (inv.timesUsed || 0) + 1 };
+            }
+            return inv;
+          });
+          await fetch(`${kvUrl}/set/investlucro:invites`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${kvToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedInvites)
+          });
+        }
       }
 
       return res.status(200).json({
@@ -187,6 +225,138 @@ module.exports = async (req, res) => {
           role: guestUser.role
         }
       });
+    }
+
+    // 3. ÁREA EXCLUSIVA GUILHERME OTÁVIO: GESTÃO DE CONVITES VIP
+    const isAdminUser = (user) => {
+      if (!user) return false;
+      const clean = user.toLowerCase().trim().replace(/[\s_]+/g, '.');
+      return clean === 'guilherme.otavio' || clean === 'guilherme' || clean === 'guilhermeotavioxxsouza@gmail.com';
+    };
+
+    // 3.1 LISTAR CONVITES
+    if (action === 'get_invites') {
+      const { requester } = req.query;
+      if (!isAdminUser(requester)) {
+        return res.status(403).json({ success: false, message: 'Acesso restrito ao administrador.' });
+      }
+
+      let invites = [];
+      if (kvUrl && kvToken) {
+        try {
+          const resInv = await fetch(`${kvUrl}/get/investlucro:invites`, {
+            headers: { Authorization: `Bearer ${kvToken}` }
+          });
+          const dataInv = await resInv.json();
+          if (dataInv && dataInv.result) {
+            invites = typeof dataInv.result === 'string' ? JSON.parse(dataInv.result) : dataInv.result;
+          }
+        } catch (e) {
+          console.error('Erro ao ler convites:', e);
+        }
+      }
+
+      // Se ainda não tiver convites salvos na nuvem, inicia com lista padrão
+      if (!Array.isArray(invites) || invites.length === 0) {
+        invites = AUTHORIZED_INVITES.map(code => ({
+          code,
+          createdAt: new Date().toISOString(),
+          createdBy: 'Guilherme.Otavio',
+          status: 'active',
+          usedBy: []
+        }));
+      }
+
+      return res.status(200).json({ success: true, invites });
+    }
+
+    // 3.2 CRIAR NOVO CONVITE VIP
+    if (req.method === 'POST' && action === 'create_invite') {
+      const { requester, code } = req.body || {};
+      if (!isAdminUser(requester)) {
+        return res.status(403).json({ success: false, message: 'Acesso restrito ao administrador.' });
+      }
+
+      const cleanCode = (code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      if (!cleanCode || cleanCode.length < 3) {
+        return res.status(400).json({ success: false, message: 'O código deve ter pelo menos 3 caracteres alfanuméricos.' });
+      }
+
+      let invites = [];
+      if (kvUrl && kvToken) {
+        const resInv = await fetch(`${kvUrl}/get/investlucro:invites`, {
+          headers: { Authorization: `Bearer ${kvToken}` }
+        });
+        const dataInv = await resInv.json();
+        if (dataInv && dataInv.result) {
+          invites = typeof dataInv.result === 'string' ? JSON.parse(dataInv.result) : dataInv.result;
+        }
+      }
+
+      if (!Array.isArray(invites)) invites = [];
+
+      if (invites.some(i => i.code === cleanCode)) {
+        return res.status(400).json({ success: false, message: 'Este código de convite já existe.' });
+      }
+
+      const newInvite = {
+        code: cleanCode,
+        createdAt: new Date().toISOString(),
+        createdBy: 'Guilherme.Otavio',
+        status: 'active',
+        usedBy: []
+      };
+
+      invites.unshift(newInvite);
+
+      if (kvUrl && kvToken) {
+        await fetch(`${kvUrl}/set/investlucro:invites`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${kvToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(invites)
+        });
+      }
+
+      return res.status(200).json({ success: true, message: `Convite ${cleanCode} criado com sucesso!`, invites, newInvite });
+    }
+
+    // 3.3 EXCLUIR / REVOGAR CONVITE VIP
+    if (req.method === 'POST' && action === 'delete_invite') {
+      const { requester, code } = req.body || {};
+      if (!isAdminUser(requester)) {
+        return res.status(403).json({ success: false, message: 'Acesso restrito ao administrador.' });
+      }
+
+      const cleanCode = (code || '').trim().toUpperCase();
+      let invites = [];
+      if (kvUrl && kvToken) {
+        const resInv = await fetch(`${kvUrl}/get/investlucro:invites`, {
+          headers: { Authorization: `Bearer ${kvToken}` }
+        });
+        const dataInv = await resInv.json();
+        if (dataInv && dataInv.result) {
+          invites = typeof dataInv.result === 'string' ? JSON.parse(dataInv.result) : dataInv.result;
+        }
+      }
+
+      if (!Array.isArray(invites)) invites = [];
+      invites = invites.filter(i => i.code !== cleanCode);
+
+      if (kvUrl && kvToken) {
+        await fetch(`${kvUrl}/set/investlucro:invites`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${kvToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(invites)
+        });
+      }
+
+      return res.status(200).json({ success: true, message: `Convite ${cleanCode} removido com sucesso!`, invites });
     }
 
     return res.status(405).json({ success: false, message: 'Método não permitido.' });
