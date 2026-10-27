@@ -4,5 +4,11 @@
 Thumbs.db
 .DS_Store
 
+# Variáveis de ambiente secretas
+.env
+.env.*
+!.env.example
+
 # Vercel
 .vercel
+
