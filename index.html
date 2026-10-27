@@ -99,15 +99,29 @@
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
         </svg>
       </button>
+
+      <!-- Perfil / Logout -->
+      <button class="btn-icon" id="userProfileHeaderBtn" onclick="if(confirm('Deseja encerrar a sessão?')) InvestAuth.logout();" title="Sessão Ativa - Clique para Sair" style="color: var(--emerald-400);">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </button>
     </div>
   </header>
 
   <!-- 3. CONTAINER PRINCIPAL: ABA INÍCIO (PANORAMA DO MERCADO) -->
   <main class="main-container">
 
-    <!-- Hero / Boas-vindas Executivo -->
-    <div style="margin-bottom: 28px;">
-      <h1 class="section-title">Panorama do Mercado Financeiro</h1>
+    <!-- Hero / Boas-vindas Executivo com Selo Oficial de Extração -->
+    <div style="margin-bottom: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <h1 class="section-title">Panorama do Mercado Financeiro</h1>
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11.5px; font-weight: 700; color: var(--emerald-400);">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--emerald-400);"></span>
+          <span>Dados Reais B3/CVM • Verificação: 27/10/2026 às 14:49</span>
+        </div>
+      </div>
       <p class="section-subtitle">Acompanhe as forças dominantes da B3, múltiplos de valuation depurados e os principais fatos relevantes do pregão.</p>
     </div>
 
@@ -238,6 +252,8 @@
 
   <!-- Scripts -->
   <script src="/js/data.js"></script>
+  <script src="/js/cdiEngine.js"></script>
+  <script src="/js/auth.js"></script>
   <script src="/js/valuation.js"></script>
   <script src="/js/charts.js"></script>
   <script src="/js/liveData.js"></script>

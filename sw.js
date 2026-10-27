@@ -1,5 +1,5 @@
-// InvestLucro - Service Worker de Alta Performance PWA (Parte 5 - Auth & CDI Real)
-const CACHE_NAME = 'investlucro-v5.2.0';
+// InvestLucro - Service Worker de Alta Performance PWA (Parte 5.3 - Serverless APIs & Real Data)
+const CACHE_NAME = 'investlucro-v5.3.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -57,6 +57,11 @@ self.addEventListener('activate', (event) => {
 // Interceptação de requisições: Stale-While-Revalidate para máxima velocidade
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Ignora requisições dinâmicas à API Serverless da Vercel
+  if (event.request.url.includes('/api/')) {
     return;
   }
 

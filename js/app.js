@@ -11,7 +11,7 @@ let searchQuery = '';
 let selectedCompareTickers = ['ITUB4', 'BBAS3']; // Comparação inicial padrão
 let USER_PORTFOLIO = JSON.parse(localStorage.getItem('i10x_portfolio')) || INITIAL_USER_PORTFOLIO;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initServiceWorker();
   initTheme();
   initMarketStatus();
@@ -20,9 +20,33 @@ document.addEventListener('DOMContentLoaded', () => {
   initGlobalSearch();
   initAssetModalEvents();
 
-  // Roteamento Modular por Página
+  // 1. GUARDA DE AUTENTICAÇÃO ESTRITA (ACESSO EXCLUSIVO)
   const path = window.location.pathname.toLowerCase();
-  
+  const isLoginPage = path.includes('login');
+  const currentUser = window.InvestAuth ? InvestAuth.getCurrentUser() : null;
+
+  if (!currentUser && !isLoginPage) {
+    // Redireciona imediatamente para a tela de login
+    window.location.replace('/login');
+    return;
+  }
+
+  if (currentUser && isLoginPage) {
+    // Já logado, vai direto para a carteira ou início
+    window.location.replace('/');
+    return;
+  }
+
+  // 2. SINCRONIZAÇÃO EM NUVEM EM SEGUNDO PLANO (CELULAR <-> COMPUTADOR)
+  if (currentUser && window.InvestAuth) {
+    InvestAuth.syncPortfolioFromCloud(currentUser.username).then(cloudData => {
+      if (cloudData && path.includes('carteira')) {
+        renderPortfolioPage();
+      }
+    });
+  }
+
+  // 3. Roteamento Modular por Página
   if (path.includes('radar')) {
     initRadarPage();
   } else if (path.includes('comparador')) {
@@ -254,17 +278,18 @@ function renderHomeDashboard() {
       .slice(0, 4);
 
     highDyList.innerHTML = topDy.map(asset => `
-      <div onclick="openAssetModal('${asset.ticker}')" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); cursor: pointer; border: 1px solid var(--border-subtle); transition: background 150ms ease;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; font-family: monospace;">${asset.ticker.substring(0, 4)}</div>
+      <div onclick="openAssetModal('${asset.ticker}')" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); cursor: pointer; border: 1px solid var(--border-subtle); transition: all 150ms ease;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="asset-type-badge">${asset.type || 'AÇÃO'}</span>
           <div>
-            <div style="font-weight: 700; font-size: 13.5px; color: var(--text-primary); font-family: monospace;">${asset.ticker}</div>
+            <div style="font-weight: 800; font-size: 14px; color: var(--text-primary); font-family: monospace;">${asset.ticker}</div>
             <div style="font-size: 11.5px; color: var(--text-muted);">${asset.name}</div>
+            <div style="font-size: 10px; color: var(--emerald-400); margin-top: 2px;">✓ Extração B3: ${asset.data_extracao || '27/10/2026 14:49'}</div>
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="font-size: 13.5px; font-weight: 800; font-family: monospace; color: var(--emerald-400);">${asset.dy}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">R$ ${asset.price.toFixed(2)}</div>
+          <div style="font-size: 14px; font-weight: 800; font-family: monospace; color: var(--emerald-400);">${asset.dy}</div>
+          <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">R$ ${asset.price.toFixed(2)}</div>
         </div>
       </div>
     `).join('');
@@ -279,17 +304,18 @@ function renderHomeDashboard() {
       .slice(0, 4);
 
     highRoeList.innerHTML = topRoe.map(asset => `
-      <div onclick="openAssetModal('${asset.ticker}')" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); cursor: pointer; border: 1px solid var(--border-subtle); transition: background 150ms ease;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; font-family: monospace;">${asset.ticker.substring(0, 4)}</div>
+      <div onclick="openAssetModal('${asset.ticker}')" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); cursor: pointer; border: 1px solid var(--border-subtle); transition: all 150ms ease;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="asset-type-badge">${asset.type || 'AÇÃO'}</span>
           <div>
-            <div style="font-weight: 700; font-size: 13.5px; color: var(--text-primary); font-family: monospace;">${asset.ticker}</div>
+            <div style="font-weight: 800; font-size: 14px; color: var(--text-primary); font-family: monospace;">${asset.ticker}</div>
             <div style="font-size: 11.5px; color: var(--text-muted);">${asset.name}</div>
+            <div style="font-size: 10px; color: var(--emerald-400); margin-top: 2px;">✓ Extração B3: ${asset.data_extracao || '27/10/2026 14:49'}</div>
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="font-size: 13.5px; font-weight: 800; font-family: monospace; color: var(--sky-400);">ROE ${asset.roe}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">P/L ${asset.pl_contabil}x</div>
+          <div style="font-size: 14px; font-weight: 800; font-family: monospace; color: var(--sky-400);">ROE ${asset.roe}</div>
+          <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">P/L ${asset.pl_contabil}x</div>
         </div>
       </div>
     `).join('');

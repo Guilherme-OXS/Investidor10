@@ -66,24 +66,45 @@ const InvestAuth = {
         return null;
       }
     }
-    // Se não houver sessão ativa, usa a sessão padrão de Guilherme
-    return AUTH_CONFIG.MASTER_USER;
+    // Sem sessão ativa: exige login obrigatório!
+    return null;
   },
 
-  login(usernameOrEmail, password) {
-    const users = this.getStoredUsers();
+  async login(usernameOrEmail, password) {
     const u = usernameOrEmail.trim().toLowerCase();
 
-    // Login mestre para o Guilherme
-    if ((u === 'guilherme' || u === 'guilhermeotavioxxsouza@gmail.com') && (password === '123456' || password === 'admin' || password === 'guilherme')) {
+    // 1. Tenta autenticar na API Serverless segura da Vercel
+    try {
+      const response = await fetch('/api/auth?action=login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password })
+      });
+      const data = await response.json();
+      if (data && data.success) {
+        localStorage.setItem('investlucro_session', JSON.stringify(data.user));
+        // Sincroniza carteira da nuvem logo após login
+        await this.syncPortfolioFromCloud(data.user.username);
+        return { success: true, user: data.user };
+      }
+    } catch (apiErr) {
+      console.warn('API Serverless offline ou em teste local, usando autenticação segura cliente:', apiErr);
+    }
+
+    // 2. Fallback de contingência local para o Administrador Master
+    if (
+      (u === 'guilherme' || u === 'admin' || u === 'guilhermeotavioxxsouza@gmail.com') &&
+      (password === 'invest2026' || password === 'admin' || password === 'guilherme')
+    ) {
       const userSession = AUTH_CONFIG.MASTER_USER;
       localStorage.setItem('investlucro_session', JSON.stringify(userSession));
       return { success: true, user: userSession };
     }
 
+    const users = this.getStoredUsers();
     const found = users.find(user => 
       (user.username.toLowerCase() === u || (user.email && user.email.toLowerCase() === u)) &&
-      (user.passHash === password || password === '123456')
+      (user.passHash === password)
     );
 
     if (found) {
@@ -98,6 +119,38 @@ const InvestAuth = {
     }
 
     return { success: false, message: 'Usuário ou senha incorretos. Acesso restrito a convidados.' };
+  },
+
+  logout() {
+    localStorage.removeItem('investlucro_session');
+    window.location.replace('/login');
+  },
+
+  // Sincronização em Nuvem (Celular <-> Computador)
+  async syncPortfolioFromCloud(username) {
+    try {
+      const res = await fetch(`/api/portfolio?username=${encodeURIComponent(username)}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.portfolio) && data.portfolio.length > 0) {
+        localStorage.setItem(`investlucro_portfolio_${username}`, JSON.stringify(data.portfolio));
+        return data.portfolio;
+      }
+    } catch (e) {
+      console.warn('Falha na sincronização da nuvem:', e);
+    }
+    return null;
+  },
+
+  async syncPortfolioToCloud(username, portfolio) {
+    try {
+      await fetch('/api/portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, portfolio })
+      });
+    } catch (e) {
+      console.warn('Falha ao enviar carteira para a nuvem:', e);
+    }
   },
 
   registerGuest(name, username, password, inviteCode) {
@@ -168,6 +221,8 @@ const InvestAuth = {
     if (!currentUser) return;
     const storageKey = `investlucro_portfolio_${currentUser.username.toLowerCase()}`;
     localStorage.setItem(storageKey, JSON.stringify(portfolio));
+    // Sincroniza imediatamente com a nuvem na Vercel (celular <-> computador)
+    this.syncPortfolioToCloud(currentUser.username, portfolio);
   }
 };
 
